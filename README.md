@@ -1,4 +1,8 @@
-# Emirates ID Reader SDK
+<p align="center">
+  <img src="docs/media/card-reader.gif" width="240" alt="Animated Emirates ID card being inserted into a chip reader">
+</p>
+
+<h1 align="center">Emirates ID Reader SDK</h1>
 
 A Rust SDK for reading public identity data from Emirates ID contact chips.
 Connect a PC/SC reader, read one snapshot, and access names, photographs,
@@ -31,7 +35,7 @@ system PC/SC service and a compatible contact reader with its normal driver. Run
 are local; the library makes no network requests and does not persist data.
 
 V1 and V2 use one data model. Historical hardware tests with an HID OMNIKEY
-3x21 came with the imported project. The 0.3 refactor has automated synthetic
+3x21 came with the imported project. The 0.4 SDK has automated synthetic
 coverage and requires fresh hardware validation; see [testing](docs/testing.md).
 Unknown ATRs are probed, without a guarantee of support for future generations.
 
@@ -146,7 +150,7 @@ cargo test --locked --all-features
 python scripts/build_wiki.py --check
 ```
 
-The library separates sessions, Windows transport, file reading, APDU
+The library separates sessions, native PC/SC transport, file reading, APDU
 handling, data models, and decoding. Tests use synthetic data and emulate
 card commands without accessing a physical card. See [contributing](CONTRIBUTING.md)
 for minimum-version checks, packaging, and documentation maintenance.

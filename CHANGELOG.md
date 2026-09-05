@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added the card-reader animation as a GIF in the README.
+
 ## 0.4.0 - 2026-09-05
 
 - Added Windows, Linux, and macOS native transport through the portable `pcsc`

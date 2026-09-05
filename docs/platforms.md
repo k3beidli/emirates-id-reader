@@ -59,7 +59,6 @@ Windows-specific and is not evidence of Linux/macOS reader compatibility.
 
 ## Sample application
 
-The desktop sample is being introduced on Windows first so its appearance and
-interaction can be reviewed before Linux/macOS distribution packages are
-finalized. Its native Rust UI and SDK integration are kept portable. The CLI
-and Rust examples can already be built on all three systems.
+A desktop sample is planned for Windows first, with Linux/macOS packages to
+follow. It is not included in the repository yet. The CLI and Rust examples
+can already be built on all three systems.

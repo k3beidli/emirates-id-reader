@@ -10,7 +10,7 @@ readme = "README.md"
 documentation = "https://docs.rs/emirates-id-reader"
 keywords = ["emirates-id", "smartcard", "pcsc", "uae", "iso7816"]
 categories = ["api-bindings", "hardware-support"]
-include = ["src/**", "docs/**/*.md", "examples/**", "scripts/build_wiki.py", "CONTRIBUTING.md", "Cargo.toml", "README.md", "CHANGELOG.md", "LICENSE"]
+include = ["src/**", "docs/**/*.md", "docs/media/*.gif", "examples/**", "scripts/build_wiki.py", "CONTRIBUTING.md", "Cargo.toml", "README.md", "CHANGELOG.md", "LICENSE"]
 
 [features]
 default = []
