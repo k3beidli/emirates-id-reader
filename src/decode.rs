@@ -16,6 +16,7 @@ pub(crate) fn field(data: &[u8], wanted_tag: u16) -> Result<Option<&[u8]>, Error
             "Card container exceeds available data",
         ));
     }
+    let mut found = None;
     let mut offset = 4;
     while offset < end {
         if offset + 4 > end {
@@ -34,11 +35,17 @@ pub(crate) fn field(data: &[u8], wanted_tag: u16) -> Result<Option<&[u8]>, Error
             ));
         }
         if tag == wanted_tag {
-            return Ok(Some(&data[value_start..value_end]));
+            if found.is_some() {
+                return Err(Error::new(
+                    ErrorKind::InvalidData,
+                    format!("Duplicate field {tag:04X}"),
+                ));
+            }
+            found = Some(&data[value_start..value_end]);
         }
         offset = value_end;
     }
-    Ok(None)
+    Ok(found)
 }
 
 pub(crate) fn text(data: &[u8], tag: u16) -> Result<Option<String>, Error> {
@@ -132,10 +139,24 @@ pub(crate) fn date(data: &[u8], tag: u16) -> Result<Option<String>, Error> {
                 format!("Date {tag:04X} is not packed BCD"),
             )
         })?;
-    Ok(Some(format!(
-        "{}{}-{}-{}",
-        digits[0], digits[1], digits[2], digits[3]
-    )))
+    let year: u16 = format!("{}{}", digits[0], digits[1]).parse().unwrap();
+    let month: u8 = digits[2].parse().unwrap();
+    let day: u8 = digits[3].parse().unwrap();
+    let leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+    let days = match month {
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        4 | 6 | 9 | 11 => 30,
+        2 if leap => 29,
+        2 => 28,
+        _ => 0,
+    };
+    if year == 0 || day == 0 || day > days {
+        return Err(Error::new(
+            ErrorKind::InvalidData,
+            format!("Date {tag:04X} is not a calendar date"),
+        ));
+    }
+    Ok(Some(format!("{year:04}-{month:02}-{day:02}")))
 }
 
 pub(crate) fn decode_non_modifiable(data: &[u8]) -> Result<NonModifiableData, Error> {

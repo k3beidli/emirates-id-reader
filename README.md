@@ -1,4 +1,4 @@
-# Emirates ID Reader
+# Emirates ID Reader SDK
 
 A Rust library for reading data from Emirates ID chips.
 
@@ -82,14 +82,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Card generation: {:?}", session.card_generation());
 
     let card = session.read()?;
-    println!("Emirates ID: {}", card.id_number);
-    println!(
-        "Name: {}",
-        card.non_modifiable
-            .full_name_english
-            .as_deref()
-            .unwrap_or("Not available")
-    );
+    let id = card.get_id_number();
+    let _ = id;
+    let name = card.get_name(); // English, falling back to Arabic
+    let photo = card.get_photo(); // Option<&[u8]> containing JPEG bytes
+    // Bind name and photo to your UI. Getters never reread the chip.
+    let _ = (name, photo);
 
     Ok(())
 }
@@ -138,25 +136,57 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 The returned `read_status` distinguishes data that was read, not requested,
 unavailable, or protected.
 
+## Simple accessors
+
+```rust,no_run
+use emirates_id_reader::{CardSession, Language, ReadOptions};
+# fn main() -> Result<(), emirates_id_reader::Error> {
+let session = CardSession::connect_first()?;
+let options = ReadOptions::identity_only().with_photo(true);
+let card = session.read_with_options(options)?;
+let name = card.get_name();
+let arabic_name = card.get_name_in(Language::Arabic);
+let photo = card.get_photo();
+let birthday = card.get_date_of_birth();
+let expiry = card.get_expiry_date();
+let passport = card.extended().passport_number.as_deref(); // None: extended data skipped
+# Ok(())
+# }
+```
+
+Methods use Rust's `snake_case`: `get_name()` and `get_photo()` are the Rust
+counterparts of `getName()` and `getPhoto()`. This release is a Rust SDK;
+JavaScript, Python, C, and .NET bindings are not included. Existing public
+fields remain available, including every bilingual and extended field.
+
+Getters borrow a completed snapshot, allocate nothing, and perform no I/O.
+`get_name()` prefers English and falls back to Arabic; `get_name_in()` does
+not fall back. `get_photo()` returns JPEG bytes or `None`; inspect
+`card.read_status.photo` to distinguish skipped or inaccessible files.
+
+Run the examples with `cargo run --example read_identity`,
+`cargo run --example read_photo`, or `cargo run --example watch_removal`.
+Generate the complete API reference with `cargo doc --no-deps --open`.
+
 ## Included command-line utility
 
-The repository currently includes a small diagnostic command-line program:
+The optional `cli` feature builds the diagnostic program. The default package is library-only:
 
 ```powershell
 # Confirm that a reader and card can be reached
-cargo run --release -- probe
+cargo run --release --features cli -- probe
 
 # Validate a read without printing identity values
-cargo run --release -- read --redacted
+cargo run --release --features cli -- read --redacted
 
 # Validate only identifiers and core identity fields (faster)
-cargo run --release -- read --redacted --identity-only
+cargo run --release --features cli -- read --redacted --identity-only
 
-# Print the basic identity values locally
-cargo run --release -- read
+# Explicitly print basic identity values locally
+cargo run --release --features cli -- read --show-personal-data
 ```
 
-The unredacted command prints personal data to the terminal. Use it only with
+The CLI is opt-in and redacts reads by default. `--show-personal-data` prints personal data to the terminal. Use it only with
 the cardholder's permission and avoid saving terminal output.
 
 ## Data returned
@@ -264,12 +294,17 @@ cd emirates-id-reader
 The project contains the library and a diagnostic CLI. Applications such as
 attendance terminals consume the crate separately.
 
-- `src/lib.rs`: public session API and Windows PC/SC transport
+- `src/lib.rs`: SDK exports and compiled quick start
+- `src/session.rs`: public session API and serialized read lifecycle
+- `src/transport.rs`: Windows PC/SC handles and FFI
+- `src/protocol.rs`: testable application selection and public-file reads
+- `src/error.rs`: structured error types
 - `src/data.rs`: public data models, read options, and card generations
 - `src/decode.rs`: public-file TLV and field decoding
 - `src/apdu.rs`: ISO 7816 response handling
 - `src/main.rs`: diagnostic CLI
-- `src/tests.rs`: synthetic parser and protocol tests
+- `src/tests.rs`, `src/sdk_tests.rs`: synthetic parser, APDU, and SDK read tests
+- `examples/`: runnable consumer examples
 
 
 Run the test suite:
@@ -281,7 +316,7 @@ cargo test
 Build the release binary:
 
 ```powershell
-cargo build --release
+cargo build --release --features cli
 ```
 
 Hardware-independent unit tests cover TLV parsing, packed-BCD decoding, date

@@ -5,8 +5,8 @@ test logs. Use the CLI's redacted mode, which reports only generation, field
 presence, character counts, image byte counts and group status.
 
 ```powershell
-cargo run --release -- probe
-cargo run --release -- read --redacted
+cargo run --release --features cli -- probe
+cargo run --release --features cli -- read --redacted
 ```
 
 ## Per-generation checklist
@@ -24,6 +24,13 @@ Run the following on at least one card from each chip generation:
 8. Remove the card and confirm `CardSession::is_present()` becomes false.
 9. Reinsert it and confirm a fresh session reads it once without stale data.
 10. Run unit tests, Clippy, API docs, and `cargo package`.
+
+## Refactor validation
+
+Version 0.3 has synthetic protocol and SDK tests. The historical results below
+were supplied with the imported 0.2 project; they are not new hardware results
+for the refactored implementation. Repeat this checklist on V1 and V2 before
+marking the new release hardware validated.
 
 ## Evidence table
 

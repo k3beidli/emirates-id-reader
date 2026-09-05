@@ -230,13 +230,25 @@ fn read(redacted: bool, identity_only: bool) -> Result<(), String> {
 fn main() -> Result<(), String> {
     let mut args = std::env::args().skip(1);
     match args.next().as_deref() {
-        None | Some("probe") => probe(),
+        None | Some("probe") => {
+            if args.next().is_some() {
+                return Err("probe accepts no options".into());
+            }
+            probe()
+        }
+        Some("--help" | "-h" | "help") => {
+            println!(
+                "Usage: emirates-id-reader [probe | read [--redacted | --show-personal-data] [--identity-only]]"
+            );
+            Ok(())
+        }
         Some("read") => {
-            let mut redacted = false;
+            let mut redacted = true;
             let mut identity_only = false;
             for argument in args {
                 match argument.as_str() {
                     "--redacted" => redacted = true,
+                    "--show-personal-data" => redacted = false,
                     "--identity-only" => identity_only = true,
                     _ => return Err(format!("Unknown read option '{argument}'")),
                 }

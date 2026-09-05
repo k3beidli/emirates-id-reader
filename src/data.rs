@@ -10,8 +10,8 @@ pub enum CardGeneration {
     V1,
     /// Second-generation Emirates ID chip.
     V2,
-    /// The card selected the Emirates ID application but its ATR is not in the
-    /// published V1/V2 list. Reading is still attempted for forward compatibility.
+    /// The ATR is not recognized. Application selection and reading may still
+    /// succeed, but this classification alone does not identify an Emirates ID.
     Unknown,
 }
 
@@ -77,6 +77,21 @@ impl ReadOptions {
             modifiable_data: false,
             holder_signature_image: false,
         }
+    }
+    /// Enables or disables photograph transfer.
+    pub const fn with_photo(mut self, enabled: bool) -> Self {
+        self.photo = enabled;
+        self
+    }
+    /// Enables or disables occupation, residency, passport, and education transfer.
+    pub const fn with_modifiable_data(mut self, enabled: bool) -> Self {
+        self.modifiable_data = enabled;
+        self
+    }
+    /// Enables or disables holder-signature image transfer.
+    pub const fn with_holder_signature_image(mut self, enabled: bool) -> Self {
+        self.holder_signature_image = enabled;
+        self
     }
 }
 
@@ -263,3 +278,81 @@ pub const PROTECTED_AND_SKIPPED_FIELDS: &[&str] = &[
     "mobile phone number",
     "email address",
 ];
+
+impl EmiratesIdData {
+    /// Returns the English full name, falling back to Arabic if English is absent.
+    /// No chip access or allocation occurs. Use [`Self::get_name_in`] for an exact language.
+    pub fn get_name(&self) -> Option<&str> {
+        self.get_name_in(Language::English)
+            .or_else(|| self.get_name_in(Language::Arabic))
+    }
+    /// Returns the full name in the requested language, without fallback.
+    pub fn get_name_in(&self, language: Language) -> Option<&str> {
+        match language {
+            Language::English => self.non_modifiable.full_name_english.as_deref(),
+            Language::Arabic => self.non_modifiable.full_name_arabic.as_deref(),
+        }
+    }
+    /// Borrows JPEG bytes. `None` means absent, empty, inaccessible, or not requested;
+    /// inspect [`Self::read_status`] for the group outcome. The SDK checks the JPEG
+    /// prefix, not complete image decodability. No file is created.
+    pub fn get_photo(&self) -> Option<&[u8]> {
+        self.photo_jpeg.as_deref()
+    }
+    /// Borrows the signature payload. Its image format is card-dependent.
+    pub fn get_signature(&self) -> Option<&[u8]> {
+        self.holder_signature_image.as_deref()
+    }
+    /// Returns the 15-digit Emirates ID number, preserving leading zeroes.
+    pub fn get_id_number(&self) -> &str {
+        &self.id_number
+    }
+    /// Returns the card serial/number.
+    pub fn get_card_number(&self) -> &str {
+        &self.card_number
+    }
+    /// Borrows all core identity fields.
+    pub fn identity(&self) -> &NonModifiableData {
+        &self.non_modifiable
+    }
+    /// Borrows occupation, residency, passport, education, and family fields.
+    pub fn extended(&self) -> &ModifiableData {
+        &self.modifiable
+    }
+    /// Returns the date of birth as `YYYY-MM-DD`, when populated.
+    pub fn get_date_of_birth(&self) -> Option<&str> {
+        self.non_modifiable.date_of_birth.as_deref()
+    }
+    /// Returns the issue date as `YYYY-MM-DD`, when populated.
+    pub fn get_issue_date(&self) -> Option<&str> {
+        self.non_modifiable.issue_date.as_deref()
+    }
+    /// Returns the expiry date as `YYYY-MM-DD`, when populated.
+    pub fn get_expiry_date(&self) -> Option<&str> {
+        self.non_modifiable.expiry_date.as_deref()
+    }
+    /// Returns the gender code exactly as stored, when populated.
+    pub fn get_gender(&self) -> Option<&str> {
+        self.non_modifiable.gender.as_deref()
+    }
+    /// Returns the nationality code, when populated.
+    pub fn get_nationality_code(&self) -> Option<&str> {
+        self.non_modifiable.nationality_code.as_deref()
+    }
+    /// Returns the nationality description in the requested language, without fallback.
+    pub fn get_nationality_in(&self, language: Language) -> Option<&str> {
+        match language {
+            Language::English => self.non_modifiable.nationality_english.as_deref(),
+            Language::Arabic => self.non_modifiable.nationality_arabic.as_deref(),
+        }
+    }
+}
+
+/// Language selection for bilingual identity accessors.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Language {
+    /// English card field.
+    English,
+    /// Arabic card field.
+    Arabic,
+}

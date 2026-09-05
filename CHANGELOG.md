@@ -2,6 +2,31 @@
 
 ## Unreleased
 
+## 0.3.0 - 2026-09-05
+
+- Added borrowed name, photo, signature, identifier, date, and nationality
+  accessors, explicit bilingual selection, and fluent read options.
+- Split session lifecycle, Windows transport, file protocol, and error types.
+- Serialized reads per session and corrected card/context destruction order.
+- Preserved reader connection failures instead of reporting every failure as
+  an absent card; invalid reader names now return `InvalidArgument`.
+- Limited directory fallback to absent-file statuses. Malformed image fields,
+  duplicate requested tags, trailing TLV corruption, and invalid calendar dates
+  now fail explicitly. Wrong-length APDU correction is limited to one retry.
+- Made the diagnostic CLI opt-in via `--features cli` and redacted by default;
+  personal values require `--show-personal-data`.
+- Added runnable examples and synthetic SDK read-flow regression tests.
+- `reader_names()` now returns an empty vector when PC/SC reports no readers.
+
+### Migration from 0.2
+
+Existing session methods and public fields remain. Add a branch for
+`ErrorKind::InvalidArgument` if matching the error enum exhaustively. Enable
+`cli` when running/installing the diagnostic binary. Previously tolerated
+malformed data now returns an error; do not rely on partial corrupt results.
+
+### Standalone import
+
 - Extracted the reader into a standalone repository with Windows CI.
 - Separated public data models, field decoding, and APDU handling into modules.
 - Preserved the existing public API and diagnostic CLI.

@@ -1,6 +1,6 @@
 [package]
 name = "emirates-id-reader"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 rust-version = "1.85"
 description = "A Rust library for reading data from Emirates ID chips."
@@ -10,7 +10,17 @@ readme = "README.md"
 documentation = "https://docs.rs/emirates-id-reader"
 keywords = ["emirates-id", "smartcard", "pcsc", "uae", "iso7816"]
 categories = ["api-bindings", "hardware-support"]
-include = ["src/**", "docs/*.md", "Cargo.toml", "README.md", "CHANGELOG.md", "LICENSE"]
+include = ["src/**", "docs/**/*.md", "examples/**", "Cargo.toml", "README.md", "CHANGELOG.md", "LICENSE"]
+
+[features]
+default = []
+# Diagnostic utility is opt-in; consumers receive only the library by default.
+cli = []
+
+[[bin]]
+name = "emirates-id-reader"
+path = "src/main.rs"
+required-features = ["cli"]
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }

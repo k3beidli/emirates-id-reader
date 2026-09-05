@@ -8,6 +8,7 @@ where
 {
     let mut command = request.to_vec();
     let mut response_data = Vec::new();
+    let mut corrected = false;
 
     for _ in 0..32 {
         let (data, status) = exchange_once(&command)?;
@@ -23,8 +24,10 @@ where
                 let available = status as u8; // 00 means 256 bytes in short APDUs.
                 let cla = request.first().copied().unwrap_or(0x00) & 0xEF;
                 command = vec![cla, 0xC0, 0x00, 0x00, available];
+                corrected = false;
             }
-            0x6C00..=0x6CFF if command.len() >= 5 => {
+            0x6C00..=0x6CFF if command.len() >= 5 && !corrected => {
+                corrected = true;
                 let le_index = if command.len() == 5 {
                     Some(4)
                 } else {
