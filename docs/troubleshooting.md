@@ -1,0 +1,28 @@
+# Troubleshooting
+
+Start with `cargo run --features cli -- probe`, then
+`cargo run --features cli -- read --identity-only`. The CLI redacts reads by
+default; keep personal values out of logs and issues.
+
+| Symptom | Check |
+| --- | --- |
+| Cargo cannot find a runnable binary | Add `--features cli`; the default is library-only |
+| Windows-specific imports fail on Linux/macOS | The current SDK transport supports Windows only |
+| Linker or Windows SDK build error | Install/configure the Rust Windows C++ build prerequisites |
+| No readers discovered | USB connection, device driver, Windows Device Manager |
+| PC/SC service failure | Windows Smart Card service and reader driver availability |
+| Reader listed but no card | Contact orientation, chip-first insertion, card seating |
+| Sharing/transaction failure | Another app may be using/resetting the reader; close it and retry |
+| `Protocol` error on first read | Inserted card may not expose the Emirates ID application |
+| `Unknown` generation | ATR is outside the known list; read may still work, support is not guaranteed |
+| No photo after identity-only read | Use `.with_photo(true)` and inspect `read_status.photo` |
+| No optional field despite `Read` status | File was read but the field may be blank/absent |
+| Protected photo or extended data | SDK cannot authenticate protected files; handle missing data |
+| Getter returns old data after reinsertion | Discard old snapshot/session and reconnect |
+| UI freezes during reading | Move blocking PC/SC work off the UI thread |
+| `InvalidData` after upgrading | 0.3 rejects corruption previously ignored; see migration guide |
+
+Report the SDK revision, Rust/Windows versions, reader model, generation,
+error kind/status word, and reproduction steps. Do not submit photographs,
+card dumps, full debug snapshots, personal identifiers, or proprietary keys.
+See [testing](testing.md) for a generation-specific validation checklist.

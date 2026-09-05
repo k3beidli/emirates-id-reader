@@ -16,6 +16,8 @@
 - Made the diagnostic CLI opt-in via `--features cli` and redacted by default;
   personal values require `--show-personal-data`.
 - Added runnable examples and synthetic SDK read-flow regression tests.
+- Added complete integration/API/field guides, generated GitHub Wiki pages,
+  documentation example tests, and minimum-Rust-version CI.
 - `reader_names()` now returns an empty vector when PC/SC reports no readers.
 
 ### Migration from 0.2

@@ -1,339 +1,158 @@
 # Emirates ID Reader SDK
 
-A Rust library for reading data from Emirates ID chips.
+A Rust SDK for reading public identity data from Emirates ID contact chips.
+Connect a PC/SC reader, read one snapshot, and access names, photographs,
+dates, and other fields through a documented API.
 
-Read public identity fields, photographs, and holder-signature images into
-structured Rust types. The library also provides reader discovery, card-presence
-checks, and optional identity-only reads.
+```rust,no_run
+use emirates_id_reader::{CardSession, Language, ReadOptions};
 
-The current implementation supports Windows through PC/SC and a contact
-smart-card reader. Reads run locally, and the library returns data in memory.
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let session = CardSession::connect_first()?;
+    let card = session.read_with_options(
+        ReadOptions::identity_only().with_photo(true),
+    )?;
 
-> [!IMPORTANT]
-> This project is independent and unofficial. It is not affiliated with,
-> endorsed by, or supported by the UAE Federal Authority for Identity,
-> Citizenship, Customs and Port Security (ICP). Applications using this crate
-> are responsible for obtaining consent and handling identity data securely.
+    let name = card.get_name();
+    let arabic_name = card.get_name_in(Language::Arabic);
+    let photo = card.get_photo();
+    let id = card.get_id_number();
+    let expiry = card.get_expiry_date();
+    // Bind these borrowed values to your UI; no additional chip reads occur.
+    let _ = (name, arabic_name, photo, id, expiry);
+    Ok(())
+}
+```
 
-## Status
+## Status and scope
 
-The crate is experimental and currently supports **Windows only**. Its API and
-decoded field coverage may change before version 1.0.
+**Experimental, Windows-only, Rust 1.85+.** Uses the Windows Smart Card service
+and a PC/SC-compatible contact reader with its normal driver. Runtime reads
+are local; the library makes no network requests and does not persist data.
 
-V1 and V2 public-data reads have been hardware-tested with an HID OMNIKEY 3x21
-contact reader and cards reporting the exact ATRs published for each chip
-generation. Generation describes the chip family, not the card artwork,
-validity, or a fixed promise about optional fields. Unknown generations are
-still probed for forward compatibility.
+V1 and V2 use one data model. Historical hardware tests with an HID OMNIKEY
+3x21 came with the imported project. The 0.3 refactor has automated synthetic
+coverage and requires fresh hardware validation; see [testing](docs/testing.md).
+Unknown ATRs are probed, without a guarantee of support for future generations.
 
-## Features
-
-- Direct communication through the Windows Smart Card API (`winscard`)
-- No proprietary runtime SDK or service
-- V1 and V2 card-generation detection from the ATR
-- Typed Rust models for identity data
-- JPEG cardholder photo extraction
-- Holder-signature payload extraction when available
-- Optional identity-only reads for faster matching and check-in workflows
-- Card-presence monitoring without repeatedly reading personal data
-- Structured error kinds and ISO 7816 status words
-- Serde serialization using camel-case field names
-
-## Requirements
-
-- Windows 10 or Windows 11
-- Rust with Edition 2024 support
-- The Windows **Smart Card** service
-- A PC/SC-compatible contact smart-card reader and its normal CCID driver
-- A supported Emirates ID card inserted chip-first in the reader
-
-No network connection is needed at runtime.
+This project is unofficial and is not affiliated with or endorsed by ICP.
+It extracts publicly accessible fields; it does not authenticate cards, read
+fingerprints, or bypass protected files. JavaScript, Python, C, .NET, Linux,
+macOS, mobile, and contactless bindings/backends are not included.
 
 ## Installation
 
-Use the Git repository as a Cargo dependency:
+Use this repository as a dependency:
 
 ```toml
 [dependencies]
 emirates-id-reader = { git = "https://github.com/k3beidli/emirates-id-reader" }
 ```
 
-For local development, point your application's dependency at this checkout:
+Or consume a local checkout:
 
 ```toml
 [dependencies]
 emirates-id-reader = { path = "../emirates-id-reader" }
 ```
 
-A crates.io release is not required to use either option.
+Keep your application's `Cargo.lock` under version control. No crates.io
+publication is required. See [getting started](docs/getting-started.md) for
+Windows prerequisites, revision pinning, and reader selection.
 
-## Quick start
+## Reading and accessing data
 
-Connect to the first reader containing a card and read all available public
-data:
+| Need | API |
+| --- | --- |
+| Discover readers | `CardSession::reader_names()` |
+| Choose a reader | `CardSession::connect(&name)` |
+| Connect to the first accessible inserted card | `CardSession::connect_first()` |
+| Read all public groups | `session.read()` |
+| Read identity only | `session.read_with_options(ReadOptions::identity_only())` |
+| Add just the photo | `ReadOptions::identity_only().with_photo(true)` |
+| English name with Arabic fallback | `card.get_name()` |
+| Exact Arabic or English name | `card.get_name_in(Language::Arabic)` |
+| JPEG bytes | `card.get_photo()` |
+| Signature payload | `card.get_signature()` |
+| Identifier, birthday, expiry | `get_id_number()`, `get_date_of_birth()`, `get_expiry_date()` |
+| Every core/extended field | `card.identity()`, `card.extended()` |
+| Monitor removal | `session.is_present()` |
 
-```rust,no_run
-use emirates_id_reader::CardSession;
+The Rust equivalents of `getName()` and `getPhoto()` are `get_name()` and
+`get_photo()`. Getters borrow an owned snapshot, allocate nothing, and never
+access the chip. Existing public fields remain available for compatibility.
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let session = CardSession::connect_first()?;
+Optional values return `None` when absent. Inspect `card.read_status` to
+distinguish `Read`, `NotRequested`, `NotAvailable`, and `Protected` groups.
+A read group can still have blank fields. Malformed data and transport
+failures return an error rather than a partial snapshot.
 
-    println!("Reader: {}", session.reader_name());
-    println!("Card generation: {:?}", session.card_generation());
+Dates are validated `YYYY-MM-DD` strings; identifiers and codes retain leading
+zeroes. Photos are JPEG bytes, while signature format may vary. Public data
+models support Serde serialization with camel-case field names. See the
+[API reference](docs/api-reference.md) and [complete field list](docs/field-reference.md).
 
-    let card = session.read()?;
-    let id = card.get_id_number();
-    let _ = id;
-    let name = card.get_name(); // English, falling back to Arabic
-    let photo = card.get_photo(); // Option<&[u8]> containing JPEG bytes
-    // Bind name and photo to your UI. Getters never reread the chip.
-    let _ = (name, photo);
+Reads are blocking: use a worker in UI/async applications. Concurrent reads
+on one session are serialized. Keep the session for presence checks, clear
+application state on removal, and reconnect after reinsertion. Dropping the
+session releases its native resources automatically.
 
-    Ok(())
-}
-```
-
-`CardSession` keeps the card connection alive. A UI can call `is_present()` to
-clear identity data immediately after the holder removes the card:
-
-```rust,no_run
-use emirates_id_reader::CardSession;
-use std::{thread, time::Duration};
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let session = CardSession::connect_first()?;
-    let card = session.read()?;
-
-    println!("Scanned: {}", card.id_number);
-
-    while session.is_present()? {
-        thread::sleep(Duration::from_millis(200));
-    }
-
-    println!("Card removed; clear the displayed identity data now.");
-    Ok(())
-}
-```
-
-## Faster identity-only reads
-
-Photos, signatures, and extended modifiable data take longer to transfer. If
-an application only needs the card number and core identity fields, use
-`ReadOptions::identity_only()`:
-
-```rust,no_run
-use emirates_id_reader::{CardSession, ReadOptions};
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let session = CardSession::connect_first()?;
-    let card = session.read_with_options(ReadOptions::identity_only())?;
-
-    println!("{}", card.id_number);
-    Ok(())
-}
-```
-
-The returned `read_status` distinguishes data that was read, not requested,
-unavailable, or protected.
-
-## Simple accessors
-
-```rust,no_run
-use emirates_id_reader::{CardSession, Language, ReadOptions};
-# fn main() -> Result<(), emirates_id_reader::Error> {
-let session = CardSession::connect_first()?;
-let options = ReadOptions::identity_only().with_photo(true);
-let card = session.read_with_options(options)?;
-let name = card.get_name();
-let arabic_name = card.get_name_in(Language::Arabic);
-let photo = card.get_photo();
-let birthday = card.get_date_of_birth();
-let expiry = card.get_expiry_date();
-let passport = card.extended().passport_number.as_deref(); // None: extended data skipped
-# Ok(())
-# }
-```
-
-Methods use Rust's `snake_case`: `get_name()` and `get_photo()` are the Rust
-counterparts of `getName()` and `getPhoto()`. This release is a Rust SDK;
-JavaScript, Python, C, and .NET bindings are not included. Existing public
-fields remain available, including every bilingual and extended field.
-
-Getters borrow a completed snapshot, allocate nothing, and perform no I/O.
-`get_name()` prefers English and falls back to Arabic; `get_name_in()` does
-not fall back. `get_photo()` returns JPEG bytes or `None`; inspect
-`card.read_status.photo` to distinguish skipped or inaccessible files.
-
-Run the examples with `cargo run --example read_identity`,
-`cargo run --example read_photo`, or `cargo run --example watch_removal`.
-Generate the complete API reference with `cargo doc --no-deps --open`.
-
-## Included command-line utility
-
-The optional `cli` feature builds the diagnostic program. The default package is library-only:
+## Examples and diagnostic CLI
 
 ```powershell
-# Confirm that a reader and card can be reached
-cargo run --release --features cli -- probe
+cargo run --example read_identity
+cargo run --example read_photo
+cargo run --example watch_removal
 
-# Validate a read without printing identity values
-cargo run --release --features cli -- read --redacted
+# The diagnostic binary is an opt-in feature.
+cargo run --features cli -- probe
+cargo run --features cli -- read
+cargo run --features cli -- read --identity-only
 
-# Validate only identifiers and core identity fields (faster)
-cargo run --release --features cli -- read --redacted --identity-only
-
-# Explicitly print basic identity values locally
-cargo run --release --features cli -- read --show-personal-data
+# Explicitly display basic personal values locally.
+cargo run --features cli -- read --show-personal-data
 ```
 
-The CLI is opt-in and redacts reads by default. `--show-personal-data` prints personal data to the terminal. Use it only with
-the cardholder's permission and avoid saving terminal output.
+CLI reads redact by default. Avoid logging the snapshot or its derived
+`Debug` output: it contains personal data. Obtain the cardholder's permission
+and collect only the fields your application needs.
 
-## Data returned
+## Documentation
 
-The library currently decodes:
+- [Getting started](docs/getting-started.md)
+- [API reference](docs/api-reference.md), [data model](docs/data-model.md), and [field reference](docs/field-reference.md)
+- [Application integration](docs/integration.md) and [error handling](docs/error-handling.md)
+- [V1/V2 compatibility](docs/card-generations.md) and [hardware testing](docs/testing.md)
+- [Troubleshooting](docs/troubleshooting.md) and [security boundaries](docs/security.md)
+- [Architecture](docs/architecture.md) and [migration from 0.2](docs/migration.md)
+- [GitHub Wiki setup](docs/wiki-setup.md) and [prepared Wiki pages](docs/wiki/Home.md)
 
-- Emirates ID number and card number
-- Card generation and reader name
-- JPEG cardholder photograph
-- ID type, issue date, and expiry date
-- Arabic and English title and full name
-- Gender
-- Arabic and English nationality and nationality code
-- Date and place of birth in Arabic and English
-- Occupation code and occupation in Arabic and English
-- Family ID, occupation type and field, and company name
-- Marital status and husband ID number
-- Sponsor type, unified number, and name
-- Residency type, number, and expiry date
-- Passport number, type, country, issue date, and expiry date
-- Qualification, degree, field and place of study, and graduation date
-- Mother's name in Arabic and English
-- Holder-signature image payload
+Generate the version-matched API documentation with:
 
-Fields are optional because the information populated on a card varies by
-holder, card generation, and issuance.
-
-## Protected data
-
-Some fields described as public in available card documentation reject a plain
-unauthenticated read with ISO 7816 status `6982`. This crate deliberately does
-not attempt to bypass that protection.
-
-Currently skipped protected fields include:
-
-- Home and work address details
-- Resident and mobile phone numbers
-- Email address
-
-The crate does not contain proprietary authentication keys or toolkit
-credentials.
-
-## Error handling
-
-Errors contain a high-level `ErrorKind`, a human-readable message, and an
-optional ISO 7816 status word:
-
-```rust,no_run
-use emirates_id_reader::{CardSession, ErrorKind};
-
-match CardSession::connect_first() {
-    Ok(session) => println!("Connected to {}", session.reader_name()),
-    Err(error) if error.kind == ErrorKind::NoReader => {
-        eprintln!("Connect a smart-card reader");
-    }
-    Err(error) if error.kind == ErrorKind::NoCard => {
-        eprintln!("Insert an Emirates ID");
-    }
-    Err(error) => eprintln!("Reader error: {error}"),
-}
+```powershell
+cargo doc --no-deps --open
 ```
 
-## Privacy and security
-
-An Emirates ID contains sensitive personal information. Software built with
-this crate should:
-
-- Read cards only with the holder's knowledge and permission
-- Keep the minimum data required for the application's purpose
-- Avoid logging IDs, names, photographs, passport details, or raw card data
-- Clear in-memory and on-screen data promptly after card removal
-- Encrypt any personal data that must be stored
-- Restrict access and follow applicable UAE privacy and data-protection rules
-- Never commit real card dumps, photographs, or identity details to source
-  control or test fixtures
-
-The crate itself performs no persistence and sends no network requests.
-
-More detail is available in the project documentation:
-
-- [V1 and V2 field matrix](docs/card-generations.md)
-- [Data model and read status](docs/data-model.md)
-- [Hardware validation checklist](docs/testing.md)
-- [Security boundaries](docs/security.md)
-
-## How it works
-
-The library uses Windows PC/SC to locate a smart-card reader, opens a shared
-card session, selects the Emirates ID application and public-data files using
-ISO 7816 APDUs, and decodes the returned TLV containers into typed Rust
-structures.
-
-The low-level PC/SC handles are owned by `CardSession` and released
-automatically when the session is dropped.
+Wiki source pages are prepared in this repository. Publishing them to
+GitHub's separate Wiki repository is described in the setup guide; pushing
+`main` alone does not publish the Wiki.
 
 ## Development
 
-Clone and enter the standalone project:
-
 ```powershell
-git clone https://github.com/k3beidli/emirates-id-reader.git
-cd emirates-id-reader
+cargo fmt --all -- --check
+cargo clippy --locked --all-targets --all-features -- -D warnings
+cargo test --locked --all-features
+python scripts/build_wiki.py --check
 ```
 
-The project contains the library and a diagnostic CLI. Applications such as
-attendance terminals consume the crate separately.
+The library separates sessions, Windows transport, file reading, APDU
+handling, data models, and decoding. Tests use synthetic data and emulate
+card commands without accessing a physical card. See [contributing](CONTRIBUTING.md)
+for minimum-version checks, packaging, and documentation maintenance.
 
-- `src/lib.rs`: SDK exports and compiled quick start
-- `src/session.rs`: public session API and serialized read lifecycle
-- `src/transport.rs`: Windows PC/SC handles and FFI
-- `src/protocol.rs`: testable application selection and public-file reads
-- `src/error.rs`: structured error types
-- `src/data.rs`: public data models, read options, and card generations
-- `src/decode.rs`: public-file TLV and field decoding
-- `src/apdu.rs`: ISO 7816 response handling
-- `src/main.rs`: diagnostic CLI
-- `src/tests.rs`, `src/sdk_tests.rs`: synthetic parser, APDU, and SDK read tests
-- `examples/`: runnable consumer examples
-
-
-Run the test suite:
-
-```powershell
-cargo test
-```
-
-Build the release binary:
-
-```powershell
-cargo build --release --features cli
-```
-
-Hardware-independent unit tests cover TLV parsing, packed-BCD decoding, date
-decoding, and typed field mapping. Hardware validation requires a compatible
-reader and card.
-
-## Contributing
-
-Bug reports and contributions are welcome, especially for:
-
-- Additional card and reader compatibility reports
-- More hardware-independent parser tests using synthetic data
-- Improved error messages and recovery behavior
-- Carefully reviewed support for other desktop operating systems
-
-Do not submit real identity data, card dumps, proprietary SDK files,
-authentication material, copyrighted documentation, or third-party binaries.
+Do not submit real card dumps, photographs, identity details, proprietary
+SDK files, authentication material, or third-party binaries.
 
 ## License
 

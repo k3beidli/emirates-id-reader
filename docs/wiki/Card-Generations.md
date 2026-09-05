@@ -125,4 +125,4 @@ validation of 0.3 is pending; synthetic tests are not hardware evidence.
   V1 card exposed more fields than the historical V1 field list, so generation
   and actual group availability remain intentionally independent.
 - Removal/reinsert lifecycle validation remains outstanding for the V1 card;
-  see [testing](testing.md).
+  see [testing](Testing).

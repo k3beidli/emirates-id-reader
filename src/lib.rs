@@ -42,3 +42,14 @@ mod tests;
 
 #[cfg(test)]
 mod sdk_tests;
+
+// Compile the consumer examples in the shipped guides as Rustdoc tests.
+#[cfg(doctest)]
+#[doc = concat!(
+    include_str!("../README.md"),
+    "\n", include_str!("../docs/getting-started.md"),
+    "\n", include_str!("../docs/integration.md"),
+    "\n", include_str!("../docs/error-handling.md"),
+    "\n", include_str!("../docs/data-model.md"),
+)]
+mod guide_examples {}

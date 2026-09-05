@@ -1,6 +1,6 @@
 # SDK data model
 
-See the [complete field reference](field-reference.md) for every public field,
+See the [complete field reference](Field-Reference) for every public field,
 Rust type, and description.
 
 `EmiratesIdData` is generation-neutral. A V1 caller and a V2 caller use the
