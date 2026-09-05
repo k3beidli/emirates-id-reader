@@ -13,13 +13,13 @@ const SCARD_W_REMOVED_CARD: i32 = 0x8010_0069_u32 as i32;
 pub enum ErrorKind {
     /// An SDK argument is invalid.
     InvalidArgument,
-    /// Windows PC/SC reports no installed reader.
+    /// native PC/SC reports no installed reader.
     NoReader,
     /// Readers exist, but none currently contains a card.
     NoCard,
     /// A connected card or reader disappeared or reset.
     CardRemoved,
-    /// A Windows PC/SC operation failed.
+    /// A native PC/SC operation failed.
     Pcsc,
     /// The card rejected an APDU or returned an invalid protocol response.
     Protocol,

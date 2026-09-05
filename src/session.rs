@@ -1,16 +1,14 @@
 //! Public connection lifecycle, serialized reads, and SDK entry points.
 use crate::{CardGeneration, EmiratesIdData, Error, ErrorKind, ReadOptions};
 use crate::{protocol::Reader, transport::Connection};
-use std::sync::Mutex;
 
-/// A live Windows PC/SC connection to one inserted card.
+/// A live native PC/SC connection to one inserted card.
 ///
 /// Reads block the calling thread. Reuse the session for presence checks, and
 /// reconnect after removal or reset. Dropping it releases native resources.
 /// Concurrent reads on the same session are serialized for the entire read.
 pub struct CardSession {
     connection: Connection,
-    read_lock: Mutex<()>,
 }
 
 impl CardSession {
@@ -28,7 +26,6 @@ impl CardSession {
         }
         Ok(Self {
             connection: Connection::connect(reader_name)?,
-            read_lock: Mutex::new(()),
         })
     }
     /// Connects to the first accessible reader containing a card.
@@ -36,7 +33,6 @@ impl CardSession {
     pub fn connect_first() -> Result<Self, Error> {
         Ok(Self {
             connection: Connection::connect_first()?,
-            read_lock: Mutex::new(()),
         })
     }
     /// Returns the reader name, without accessing the chip.
@@ -67,16 +63,11 @@ impl CardSession {
     /// Transport and malformed-data errors fail the read; inaccessible optional
     /// groups are represented by [`crate::ReadStatus`].
     pub fn read_with_options(&self, options: ReadOptions) -> Result<EmiratesIdData, Error> {
-        let _lock = self.read_lock.lock().map_err(|_| {
-            Error::new(
-                ErrorKind::Protocol,
-                "Session read was interrupted by a panic; reconnect",
-            )
-        })?;
-        let _transaction = self.connection.begin_transaction()?;
-        Reader {
-            exchange: |command: &[u8]| self.connection.transmit(command),
-        }
-        .read(self.reader_name(), self.card_generation(), options)
+        self.connection.with_transaction(|transaction| {
+            Reader {
+                exchange: |command: &[u8]| crate::transport::transmit(transaction, command),
+            }
+            .read(self.reader_name(), self.card_generation(), options)
+        })
     }
 }

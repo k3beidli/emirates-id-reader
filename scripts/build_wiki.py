@@ -9,6 +9,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 PAGES = {
     "Home": "docs/wiki-home.md",
+    "Platforms": "docs/platforms.md",
     "Getting-Started": "docs/getting-started.md",
     "API-Reference": "docs/api-reference.md",
     "Data-Model": "docs/data-model.md",
@@ -96,7 +97,7 @@ def main():
     outputs[ROOT / "docs/wiki/_Footer.md"] = (
         "[Source repository](https://github.com/k3beidli/emirates-id-reader) | "
         "[Getting started](Getting-Started) | [Security](Security)\n\n"
-        "Unofficial Rust SDK. Windows contact PC/SC. "
+        "Unofficial Rust SDK. Windows, Linux, and macOS contact PC/SC. "
         "Generated from the repository documentation; edit the source guides.\n"
     )
     stale = []

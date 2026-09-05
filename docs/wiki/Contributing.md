@@ -6,7 +6,7 @@ semantics and add synthetic regression cases for parser/protocol changes.
 Never commit real identities, images, card dumps, credentials, proprietary
 toolkit files, or third-party binaries.
 
-## Local checks (Windows)
+## Local checks
 
 ```powershell
 cargo fmt --all -- --check

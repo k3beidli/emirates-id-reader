@@ -14,7 +14,7 @@ cargo run --release --features cli -- read --redacted
 Run the following on at least one card from each chip generation:
 
 1. Confirm the ATR and detected `CardGeneration` agree with the ICP table.
-2. Confirm application selection succeeds through Windows PC/SC.
+2. Confirm application selection succeeds through native PC/SC.
 3. Confirm ID number, card number and both full names are present.
 4. Confirm all non-modifiable fields decode without invalid UTF-8 or BCD.
 5. Confirm the modifiable group is either decoded or has an explicit status.

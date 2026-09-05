@@ -8,7 +8,7 @@ Generated from the public Rustdoc comments in `src/data.rs`. Edit those comments
 
 | Field | Rust type | Meaning |
 | --- | --- | --- |
-| `reader_name` | `String` | Name of the Windows PC/SC reader. |
+| `reader_name` | `String` | Name of the native PC/SC reader. |
 | `card_generation` | `CardGeneration` | Chip generation classified from the ATR. |
 | `id_number` | `String` | Required 15-character Emirates ID number. |
 | `card_number` | `String` | Required card number/serial stored by the ID application. |

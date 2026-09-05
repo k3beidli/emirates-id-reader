@@ -249,7 +249,7 @@ pub struct ModifiableData {
 #[serde(rename_all = "camelCase")]
 /// Complete in-memory result of one public-data read.
 pub struct EmiratesIdData {
-    /// Name of the Windows PC/SC reader.
+    /// Name of the native PC/SC reader.
     pub reader_name: String,
     /// Chip generation classified from the ATR.
     pub card_generation: CardGeneration,

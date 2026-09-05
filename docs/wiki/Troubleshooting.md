@@ -7,7 +7,7 @@ default; keep personal values out of logs and issues.
 | Symptom | Check |
 | --- | --- |
 | Cargo cannot find a runnable binary | Add `--features cli`; the default is library-only |
-| Windows-specific imports fail on Linux/macOS | The current SDK transport supports Windows only |
+| Missing PC/SC library during build | Install the platform PC/SC development files; see the platform setup guide |
 | Linker or Windows SDK build error | Install/configure the Rust Windows C++ build prerequisites |
 | No readers discovered | USB connection, device driver, Windows Device Manager |
 | PC/SC service failure | Windows Smart Card service and reader driver availability |

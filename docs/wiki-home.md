@@ -1,7 +1,7 @@
 # Emirates ID Reader SDK
 
 A Rust SDK for reading public identity fields, photographs, and signature
-payloads from Emirates ID contact chips through Windows PC/SC.
+payloads from Emirates ID contact chips through native PC/SC.
 
 The public API is designed around connecting once, reading an owned snapshot,
 and accessing values with `get_name()`, `get_photo()`, and other borrowed
@@ -25,8 +25,8 @@ describe what the individual card exposes.
 
 ## Scope and status
 
-Version 0.3.0 remains experimental. The current backend supports Windows
-contact PC/SC only. Historical hardware results came with the imported
+Version 0.4.0 remains experimental. The native backend supports Windows, Linux, and macOS contact PC/SC.
+See [platform setup](platforms.md). Historical hardware results came with the imported
 project; the refactor requires fresh hardware validation. Unknown ATRs are
 probed, but future generations are not guaranteed to work.
 

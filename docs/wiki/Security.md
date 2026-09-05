@@ -6,7 +6,7 @@ operationally entitled to collect, display, transmit, or retain a field.
 
 ## SDK guarantees
 
-- Card reads use the local Windows PC/SC service.
+- Card reads use the local native PC/SC service.
 - The SDK makes no network requests and writes no cardholder data to disk.
 - Error messages do not contain decoded cardholder field values.
 - The CLI redacts reads by default; output includes field presence/lengths and

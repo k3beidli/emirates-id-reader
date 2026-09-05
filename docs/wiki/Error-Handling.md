@@ -9,7 +9,7 @@ text and may change; do not parse them as a stable interface.
 | `NoReader` | No PC/SC reader available | Ask the user to connect a reader |
 | `NoCard` | No inserted card | Wait for insertion |
 | `CardRemoved` | Card/reader disappeared or card reset | Clear stale data and reconnect |
-| `Pcsc` | Windows smart-card operation failed | Inspect driver/service/reader sharing; offer retry |
+| `Pcsc` | Native smart-card operation failed | Inspect driver/service/reader sharing; offer retry |
 | `Protocol` | APDU rejected or invalid response | Inspect `status_word`; check card compatibility |
 | `InvalidData` | Truncated or malformed file/field | Reject the result; report only redacted diagnostics |
 

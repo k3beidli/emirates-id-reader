@@ -1,6 +1,6 @@
 //! A Rust library for reading data from Emirates ID chips.
 //!
-//! The crate talks to contact cards through Windows PC/SC. Cardholder data is
+//! The crate talks to contact cards through native PC/SC on Windows, Linux, and macOS. Cardholder data is
 //! returned in memory and is never persisted by the SDK.
 //!
 //! # Quick start

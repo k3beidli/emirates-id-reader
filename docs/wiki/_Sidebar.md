@@ -1,4 +1,5 @@
 - [Home](Home)
+- [Platforms](Platforms)
 - [Getting Started](Getting-Started)
 - [API Reference](API-Reference)
 - [Data Model](Data-Model)

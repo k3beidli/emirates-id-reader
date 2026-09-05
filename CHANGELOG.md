@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 0.4.0 - 2026-09-05
+
+- Added Windows, Linux, and macOS native transport through the portable `pcsc`
+  bindings, replacing the hand-written Windows FFI.
+- Preserved the public SDK API and LeaveCard disconnect behavior; transaction
+  cleanup failures now propagate after an otherwise successful read.
+- Added native CI builds, tests, linting, docs, and packaging on all three OSes.
+- Documented platform build/runtime dependencies and hardware validation limits.
+
 ## 0.3.0 - 2026-09-05
 
 - Added borrowed name, photo, signature, identifier, date, and nationality

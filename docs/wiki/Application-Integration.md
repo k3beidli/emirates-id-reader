@@ -26,7 +26,7 @@ and provide its own stop/shutdown control for the worker.
 PC/SC calls are synchronous and may block, including transaction acquisition.
 Run them on a dedicated worker or your async runtime's blocking executor.
 Do not execute reads on a GUI event thread. A timeout around an async wrapper
-does not cancel the underlying Windows call; the SDK has no cancellation API.
+does not cancel the underlying native call; the SDK has no cancellation API.
 
 Reads sharing one session are protected by a mutex and a PC/SC transaction.
 The mutex prevents concurrent callers from interleaving selections on the

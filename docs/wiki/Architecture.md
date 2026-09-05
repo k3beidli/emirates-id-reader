@@ -7,7 +7,7 @@ transport, without a connected reader.
 ```text
 Application
   -> CardSession (session.rs): lifecycle, read mutex, transaction boundary
-       -> Connection (transport.rs): Windows handles and PC/SC FFI
+       -> Connection (transport.rs): portable pcsc bindings and native handles
        -> Reader (protocol.rs): application/files, chunking, optional groups
             -> exchange_apdu (apdu.rs): continuation and length correction
             -> decode.rs: TLV, UTF-8, BCD, calendar dates
@@ -21,10 +21,10 @@ Tauri commands, HTTP endpoints, or persistence is part of the SDK.
 
 ## Resource ownership
 
-A connection owns a card and its PC/SC context. Rust field drop order releases
-the card before its parent context. A transaction guard ends the transaction
-on normal return, error return, or unwinding. The session mutex covers the
-whole read because native transactions alone do not prevent same-handle
+The `pcsc` binding owns native resources and keeps the parent context alive
+for its card. Our handle wrapper disconnects with `LeaveCard`. A transaction guard ends the transaction
+on normal return, error return, or unwinding. The connection mutex covers the
+whole read and presence checks because native transactions alone do not prevent same-handle
 callers from interleaving commands. A poisoned mutex returns an error asking
 the caller to reconnect.
 
@@ -63,6 +63,8 @@ SELECT and READ BINARY behavior to test options, statuses, image chunking,
 fallback, and malformed data. These tests do not establish hardware support.
 
 The private protocol reader accepts a command callback, isolating it from
-Windows. A future platform backend should preserve the public lifecycle,
-transaction guarantees, and error semantics. Platform portability or a
-public raw-transport API is not promised by this release.
+the native transport. The `pcsc` crate handles WinSCard on Windows, pcsc-lite
+on Linux, and the system PCSC framework on macOS. Platform-specific ABI and
+resource ownership are kept out of the SDK protocol code. A public raw-transport
+API is not included. A successful read also requires successful transaction
+cleanup; cleanup failures are returned to the caller.

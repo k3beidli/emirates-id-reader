@@ -1,16 +1,17 @@
 # Getting started
 
 Emirates ID Reader is an unofficial Rust SDK for local public-data extraction
-from contact chips. It uses Windows PC/SC directly. It requires no proprietary
+from contact chips. It uses native PC/SC directly. It requires no proprietary
 toolkit, background application server, or runtime network connection.
 
 ## Requirements
 
-- Windows 10 or 11, with the Windows Smart Card service available.
-- Rust 1.85 or newer and a working Windows Rust linker/build toolchain.
+- Windows 10/11, Linux with pcsc-lite, or macOS with the system PCSC framework.
+- Rust 1.85 or newer and the native platform build toolchain.
 - A PC/SC contact reader with its normal driver, and an inserted Emirates ID.
 
-The current transport is Windows-only. Linux, macOS, browser/WebUSB, mobile,
+Native transport supports Windows, Linux, and macOS. See [platform setup](platforms.md)
+for the required PC/SC service and build dependencies. Browser/WebUSB, mobile,
 contactless NFC, and bindings for other languages are not implemented.
 
 ## Add the dependency
@@ -29,7 +30,7 @@ emirates-id-reader = { path = "../emirates-id-reader" }
 
 Commit your application's `Cargo.lock` to retain its resolved Git revision.
 For a release, you can also add `rev = "<full reviewed commit SHA>"` to the Git
-dependency. Version 0.3.0 is the package version in this repository; these
+dependency. Version 0.4.0 is the package version in this repository; these
 instructions do not assume a crates.io publication or Git release tag.
 
 ## Read a card

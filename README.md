@@ -26,8 +26,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ## Status and scope
 
-**Experimental, Windows-only, Rust 1.85+.** Uses the Windows Smart Card service
-and a PC/SC-compatible contact reader with its normal driver. Runtime reads
+**Experimental, Windows / Linux / macOS, Rust 1.85+.** Uses the operating
+system PC/SC service and a compatible contact reader with its normal driver. Runtime reads
 are local; the library makes no network requests and does not persist data.
 
 V1 and V2 use one data model. Historical hardware tests with an HID OMNIKEY
@@ -37,8 +37,8 @@ Unknown ATRs are probed, without a guarantee of support for future generations.
 
 This project is unofficial and is not affiliated with or endorsed by ICP.
 It extracts publicly accessible fields; it does not authenticate cards, read
-fingerprints, or bypass protected files. JavaScript, Python, C, .NET, Linux,
-macOS, mobile, and contactless bindings/backends are not included.
+fingerprints, or bypass protected files. JavaScript, Python, C, .NET, mobile, and contactless bindings/backends
+are not included. See [platform setup](docs/platforms.md) for native prerequisites.
 
 ## Installation
 
@@ -58,7 +58,7 @@ emirates-id-reader = { path = "../emirates-id-reader" }
 
 Keep your application's `Cargo.lock` under version control. No crates.io
 publication is required. See [getting started](docs/getting-started.md) for
-Windows prerequisites, revision pinning, and reader selection.
+platform prerequisites, revision pinning, and reader selection.
 
 ## Reading and accessing data
 
