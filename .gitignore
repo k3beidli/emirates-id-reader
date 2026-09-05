@@ -1,0 +1,12 @@
+/target/
+**/target/
+.codex/
+.claude/
+[Aa][Gg][Ee][Nn][Tt][Ss].[Mm][Dd]
+[Cc][Ll][Aa][Uu][Dd][Ee].[Mm][Dd]
+.env
+.env.*
+*.log
+*.dmp
+.DS_Store
+Thumbs.db
