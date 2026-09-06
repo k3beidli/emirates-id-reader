@@ -10,7 +10,10 @@ readme = "README.md"
 documentation = "https://docs.rs/emirates-id-reader"
 keywords = ["emirates-id", "smartcard", "pcsc", "uae", "iso7816"]
 categories = ["api-bindings", "hardware-support"]
-include = ["src/**", "docs/**/*.md", "docs/media/*.gif", "examples/**", "scripts/build_wiki.py", "CONTRIBUTING.md", "Cargo.toml", "README.md", "CHANGELOG.md", "LICENSE"]
+# Anchor patterns at this package root so nested app READMEs/licenses do not match.
+# The negated paths keep companion-app guides out of the SDK archive if those
+# pages are added under docs/ or generated into docs/wiki/ in the future.
+include = ["/src/**", "/docs/**/*.md", "/docs/media/*.gif", "/examples/**", "/scripts/build_wiki.py", "/CONTRIBUTING.md", "/Cargo.toml", "/README.md", "/CHANGELOG.md", "/LICENSE", "!/docs/sample-app.md", "!/docs/wiki/Sample-App.md"]
 
 [features]
 default = []
