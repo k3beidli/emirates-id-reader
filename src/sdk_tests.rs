@@ -1,4 +1,4 @@
-use crate::{CardGeneration, DataGroupStatus, Error, ErrorKind, Language, ReadOptions};
+use crate::{CardGeneration, DataGroupStatus, Error, ErrorKind, Gender, Language, ReadOptions};
 use std::collections::BTreeMap;
 
 fn container(fields: &[(u16, &[u8])]) -> Vec<u8> {
@@ -37,8 +37,9 @@ impl FakeCard {
                 (
                     0x0203,
                     Ok(container(&[
-                        (0xE30B, b"SYNTHETIC HOLDER"),
-                        (0xA309, "اسم تجريبي".as_bytes()),
+                        (0xE30B, b"SYNTHETIC,TEST,,HOLDER"),
+                        (0xA309, "اسم,تجريبي".as_bytes()),
+                        (0xE30C, b"M"),
                     ])),
                 ),
                 (
@@ -114,8 +115,19 @@ fn full_read_and_borrowed_accessors_work_for_all_generation_classifications() {
             .read(ReadOptions::all(), generation)
             .unwrap();
         assert_eq!(data.card_generation, generation);
-        assert_eq!(data.get_name(), Some("SYNTHETIC HOLDER"));
-        assert_eq!(data.get_name_in(Language::Arabic), Some("اسم تجريبي"));
+        // The raw accessors keep returning the stored value, separators included.
+        assert_eq!(data.get_name(), Some("SYNTHETIC,TEST,,HOLDER"));
+        assert_eq!(data.get_name_in(Language::Arabic), Some("اسم,تجريبي"));
+        assert_eq!(data.get_gender(), Some("M"));
+        assert_eq!(
+            data.identity().full_name_english.as_deref(),
+            Some("SYNTHETIC,TEST,,HOLDER")
+        );
+        assert_eq!(
+            data.get_formatted_name().as_deref(),
+            Some("SYNTHETIC TEST HOLDER")
+        );
+        assert_eq!(data.gender(), Some(Gender::Male));
         assert_eq!(data.get_photo(), Some(&[0xFF, 0xD8, 0xFF, 0xD9][..]));
         assert_eq!(data.get_signature(), Some(&[1, 2, 3][..]));
         assert_eq!(data.get_id_number(), "000000000000000");
@@ -135,12 +147,140 @@ fn full_read_and_borrowed_accessors_work_for_all_generation_classifications() {
 fn name_fallback_does_not_affect_language_specific_lookup() {
     let mut card = FakeCard::new();
     card.files
-        .insert(0x0203, Ok(container(&[(0xA309, "اسم تجريبي".as_bytes())])));
+        .insert(0x0203, Ok(container(&[(0xA309, "اسم,تجريبي".as_bytes())])));
     let data = card
         .read(ReadOptions::identity_only(), CardGeneration::V1)
         .unwrap();
-    assert_eq!(data.get_name(), Some("اسم تجريبي"));
+    assert_eq!(data.get_name(), Some("اسم,تجريبي"));
     assert_eq!(data.get_name_in(Language::English), None);
+    assert_eq!(data.get_formatted_name().as_deref(), Some("اسم تجريبي"));
+    assert_eq!(data.get_formatted_name_in(Language::English), None);
+    assert_eq!(data.name_components_in(Language::English).count(), 0);
+}
+
+#[test]
+fn name_components_preserve_empty_positions_that_formatting_drops() {
+    let data = FakeCard::new()
+        .read(ReadOptions::identity_only(), CardGeneration::V1)
+        .unwrap();
+    assert_eq!(
+        data.name_components_in(Language::English)
+            .collect::<Vec<_>>(),
+        ["SYNTHETIC", "TEST", "", "HOLDER"]
+    );
+    assert_eq!(
+        data.name_components_in(Language::Arabic)
+            .collect::<Vec<_>>(),
+        ["اسم", "تجريبي"]
+    );
+    assert_eq!(
+        data.get_formatted_name_in(Language::English).as_deref(),
+        Some("SYNTHETIC TEST HOLDER")
+    );
+    assert_eq!(
+        data.get_formatted_name_in(Language::Arabic).as_deref(),
+        Some("اسم تجريبي")
+    );
+}
+
+#[test]
+fn separator_only_names_keep_positions_but_have_no_formatted_value() {
+    let mut card = FakeCard::new();
+    card.files.insert(
+        0x0203,
+        Ok(container(&[
+            (0xE30B, b" , ,, "),
+            (0xA309, "اسم,تجريبي".as_bytes()),
+        ])),
+    );
+    let data = card
+        .read(ReadOptions::identity_only(), CardGeneration::V1)
+        .unwrap();
+    // The decoder trims the stored value; the separators it keeps are the structure.
+    assert_eq!(data.get_name_in(Language::English), Some(", ,,"));
+    assert_eq!(
+        data.name_components_in(Language::English)
+            .collect::<Vec<_>>(),
+        ["", "", "", ""]
+    );
+    assert_eq!(data.get_formatted_name_in(Language::English), None);
+    // The wider fallback: no usable English value, so Arabic is formatted instead.
+    assert_eq!(data.get_formatted_name().as_deref(), Some("اسم تجريبي"));
+}
+
+#[test]
+fn names_without_separators_yield_a_single_component() {
+    let mut card = FakeCard::new();
+    card.files
+        .insert(0x0203, Ok(container(&[(0xE30B, b"SYNTHETIC HOLDER")])));
+    let data = card
+        .read(ReadOptions::identity_only(), CardGeneration::V1)
+        .unwrap();
+    assert_eq!(
+        data.name_components_in(Language::English)
+            .collect::<Vec<_>>(),
+        ["SYNTHETIC HOLDER"]
+    );
+    assert_eq!(
+        data.get_formatted_name().as_deref(),
+        Some("SYNTHETIC HOLDER")
+    );
+}
+
+#[test]
+fn gender_codes_are_interpreted_without_discarding_unknown_values() {
+    assert_eq!(Gender::from_code("M"), Gender::Male);
+    assert_eq!(Gender::from_code("m"), Gender::Male);
+    assert_eq!(Gender::from_code("F"), Gender::Female);
+    assert_eq!(Gender::from_code("f"), Gender::Female);
+    assert_eq!(Gender::Male.code(), "M");
+    assert_eq!(Gender::Female.code(), "F");
+    // A lowercase code is interpreted, but code() reports the canonical form.
+    assert_eq!(Gender::from_code("m").code(), "M");
+    // An unknown code is preserved verbatim, never collapsed into None.
+    assert_eq!(
+        Gender::from_code("X"),
+        Gender::Unrecognized(String::from("X"))
+    );
+    assert_eq!(Gender::from_code("X").code(), "X");
+
+    let mut card = FakeCard::new();
+    card.files.insert(
+        0x0203,
+        Ok(container(&[(0xE30B, b"SYNTHETIC"), (0xE30C, b"X")])),
+    );
+    let data = card
+        .read(ReadOptions::identity_only(), CardGeneration::V1)
+        .unwrap();
+    assert_eq!(data.get_gender(), Some("X"));
+    assert_eq!(data.gender(), Some(Gender::Unrecognized(String::from("X"))));
+
+    let mut card = FakeCard::new();
+    card.files
+        .insert(0x0203, Ok(container(&[(0xE30B, b"SYNTHETIC")])));
+    let data = card
+        .read(ReadOptions::identity_only(), CardGeneration::V1)
+        .unwrap();
+    assert_eq!(data.get_gender(), None);
+    assert_eq!(data.gender(), None);
+}
+
+#[test]
+fn id_number_formatting_groups_valid_digits_and_passes_other_values_through() {
+    let mut data = FakeCard::new()
+        .read(ReadOptions::identity_only(), CardGeneration::V1)
+        .unwrap();
+    assert_eq!(data.get_id_number(), "000000000000000");
+    assert_eq!(data.formatted_id_number(), "000-0000-0000000-0");
+    data.id_number = String::from("784198512345671");
+    assert_eq!(data.formatted_id_number(), "784-1985-1234567-1");
+    // The field is public, so the formatter must survive values a read cannot produce.
+    for replacement in ["", "7841985", "78419851234567", "7841985123456712", "abc"] {
+        data.id_number = String::from(replacement);
+        assert_eq!(data.formatted_id_number(), replacement);
+    }
+    data.id_number = String::from("٧٨٤١٩٨٥١٢٣٤٥٦٧١");
+    assert_eq!(data.formatted_id_number(), "٧٨٤١٩٨٥١٢٣٤٥٦٧١");
 }
 
 #[test]

@@ -88,8 +88,8 @@ security policy or guarantee that a holder has a non-empty value.
 | `id_type` | Yes | Yes | Called document type in the V1 field list |
 | `issue_date`, `expiry_date` | Yes | Yes | Packed BCD, returned as ISO dates |
 | Arabic/English titles | Yes | Yes | May be blank |
-| Arabic/English full names | Yes | Yes | V1 uses comma-separated name components internally |
-| `gender` | Yes | Yes | Card value is returned without reinterpretation |
+| Arabic/English full names | Yes | Yes | Comma-separated name components; `get_formatted_name()` joins them for display |
+| `gender` | Yes | Yes | Stored code returned unchanged; `gender()` interprets it |
 | Arabic nationality | Yes | Yes | Description |
 | nationality code | Yes | Yes | V1's English nationality entry is three bytes |
 | English nationality description | No separate V1 description | Yes | V2 extension |

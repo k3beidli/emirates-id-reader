@@ -38,6 +38,30 @@ Dates are returned as `YYYY-MM-DD`. Numeric BCD codes are returned as strings
 so leading zeroes are preserved and callers do not accidentally treat codes as
 quantities.
 
+## What the SDK formats
+
+The card stores some values in a form built for machines rather than for
+display: packed BCD dates, comma-delimited names, single-letter codes. Deciding
+which of these the SDK should convert uses one rule:
+
+> **Format toward what the card prints. Anything beyond that belongs to the
+> application.**
+
+Decoding a packed-BCD date into `YYYY-MM-DD`, joining comma-delimited name
+components with spaces, and grouping the identifier as `784-YYYY-NNNNNNN-C` all
+produce what a reader sees on the document, in any language. Turning the `M`
+code into `Male` or `ذكر` does not: those are translations, and the card's own
+`Sex` field prints `M`. So the SDK interprets the code into a `Gender` value
+and leaves the label to the caller.
+
+The rule applies to coded fields added later — marital status, occupation type,
+sponsor type, and the rest. Interpret the code into a type when its meaning is
+verified; do not ship a translation table.
+
+Formatting is always additive. Raw accessors, public fields, and serialization
+keep returning the decoded value, so nothing the card supplied is discarded.
+See [API reference](API-Reference) for the formatting accessors.
+
 ## Fast identity-only reads
 
 ```rust,no_run

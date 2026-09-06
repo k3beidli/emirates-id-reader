@@ -28,14 +28,17 @@ session. There is no SDK timeout, cancellation, or automatic retry facility.
 
 ## Snapshot accessors
 
-Every accessor below borrows from the snapshot. None performs chip I/O or
-allocates. The snapshot owns its data and remains usable after the session is
-dropped. Its borrows cannot outlive it.
+Every accessor below reads the snapshot without chip I/O. The snapshot owns its
+data and remains usable after the session is dropped. Its borrows cannot
+outlive it. Accessors returning `&str`, `&[u8]`, or an iterator borrow and
+allocate nothing; the formatting accessors in the next section build a new
+`String`.
 
 | Method | Return type | Meaning |
 | --- | --- | --- |
-| `get_name()` | `Option<&str>` | English name, falling back to Arabic |
-| `get_name_in(Language)` | `Option<&str>` | Exact requested language; no fallback |
+| `get_name()` | `Option<&str>` | Stored English name, falling back to Arabic |
+| `get_name_in(Language)` | `Option<&str>` | Stored name in the exact language; no fallback |
+| `name_components_in(Language)` | `impl Iterator<Item = &str>` | Stored name components in card order |
 | `get_photo()` | `Option<&[u8]>` | JPEG photograph payload |
 | `get_signature()` | `Option<&[u8]>` | Signature-image payload; format may vary |
 | `get_id_number()` | `&str` | Required 15-digit ID |
@@ -52,6 +55,37 @@ dropped. Its borrows cannot outlive it.
 `Language` is `English` or `Arabic`. The API uses Rust's `snake_case`, so
 `get_name()` corresponds to the `getName()` style used in other languages.
 No JavaScript or other language bindings are supplied.
+
+## Formatting accessors
+
+These are additive. They never change what the raw accessors, the public
+fields, or serialization return; see [data model](data-model.md) for the rule
+that decides what the SDK formats.
+
+| Method | Return type | Meaning |
+| --- | --- | --- |
+| `get_formatted_name()` | `Option<String>` | Display name, English with Arabic fallback |
+| `get_formatted_name_in(Language)` | `Option<String>` | Display name in the exact language |
+| `formatted_id_number()` | `String` | ID grouped as `784-YYYY-NNNNNNN-C` |
+| `gender()` | `Option<Gender>` | Interpreted gender code |
+
+Name formatting replaces the card's comma separators with single spaces, drops
+empty positions, and trims. Capitalization, spelling, diacritics, and component
+order are preserved; the SDK does not identify which position holds a given
+name or a family name. A field that is absent, or that holds only separators
+and whitespace, yields `None`. Because a separator-only English field has no
+formatted value, `get_formatted_name()` falls back to Arabic in a case where
+`get_name()` would return the stored separators.
+
+`formatted_id_number()` returns any value that is not exactly fifteen ASCII
+digits unchanged. A read cannot produce one, but `id_number` is a public field
+a caller can replace.
+
+`Gender` is `Male`, `Female`, or `Unrecognized(String)`. `Gender::from_code()`
+matches `M` and `F` case-insensitively, and `Gender::code()` returns the
+canonical uppercase code printed on the card, or an unrecognized value exactly
+as stored. An unknown code never becomes `None`. The SDK supplies no `Male` or
+`ذكر` labels: those are translations rather than card data.
 
 Public data fields remain available for compatibility. For example,
 `card.extended().passport_number.as_deref()` accesses the optional passport

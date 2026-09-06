@@ -19,6 +19,24 @@ fields remain available.
 Getters borrow the same result rather than transferring or cloning fields.
 No renaming of your application's serialized camel-case fields is needed.
 
+## Replacing your own formatting
+
+Applications commonly strip the card's comma separators from names and group the
+identifier for display. Those helpers can move to the SDK:
+
+| Your existing helper | SDK accessor |
+| --- | --- |
+| Replacing commas in a name with spaces | `card.get_formatted_name()` |
+| The same for one language | `card.get_formatted_name_in(Language::Arabic)` |
+| Splitting a name on commas | `card.name_components_in(Language::English)` |
+| Grouping the ID as `784-YYYY-NNNNNNN-C` | `card.formatted_id_number()` |
+| Comparing the gender code against `"M"` | `card.gender()` |
+
+These are additions. Existing getters, public fields, and serialized values are
+unchanged, so an application can adopt them field by field. Gender *labels* stay
+in the application: the SDK interprets the code into `Gender` but supplies no
+`Male` or `ذكر` text.
+
 ## Behavior changes
 
 - Enable `cli` to build/run the binary: `cargo run --features cli -- read`.

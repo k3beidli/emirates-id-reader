@@ -17,12 +17,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ReadOptions::identity_only().with_photo(true),
     )?;
 
-    let name = card.get_name();
-    let arabic_name = card.get_name_in(Language::Arabic);
+    let name = card.get_formatted_name();
+    let arabic_name = card.get_formatted_name_in(Language::Arabic);
     let photo = card.get_photo();
-    let id = card.get_id_number();
+    let id = card.formatted_id_number();
     let expiry = card.get_expiry_date();
-    // Bind these borrowed values to your UI; no additional chip reads occur.
+    // Bind these values to your UI; no additional chip reads occur.
     let _ = (name, arabic_name, photo, id, expiry);
     Ok(())
 }
@@ -74,17 +74,47 @@ platform prerequisites, revision pinning, and reader selection.
 | Read all public groups | `session.read()` |
 | Read identity only | `session.read_with_options(ReadOptions::identity_only())` |
 | Add just the photo | `ReadOptions::identity_only().with_photo(true)` |
-| English name with Arabic fallback | `card.get_name()` |
-| Exact Arabic or English name | `card.get_name_in(Language::Arabic)` |
+| Name for display, English with Arabic fallback | `card.get_formatted_name()` |
+| Name for display in one language | `card.get_formatted_name_in(Language::Arabic)` |
+| Stored name, separators intact | `card.get_name()`, `card.get_name_in(Language::Arabic)` |
+| Individual stored name components | `card.name_components_in(Language::English)` |
 | JPEG bytes | `card.get_photo()` |
 | Signature payload | `card.get_signature()` |
+| Identifier as printed | `card.formatted_id_number()` |
 | Identifier, birthday, expiry | `get_id_number()`, `get_date_of_birth()`, `get_expiry_date()` |
+| Interpreted gender code | `card.gender()` |
+| Stored gender code | `card.get_gender()` |
 | Every core/extended field | `card.identity()`, `card.extended()` |
 | Monitor removal | `session.is_present()` |
 
 The Rust equivalents of `getName()` and `getPhoto()` are `get_name()` and
-`get_photo()`. Getters borrow an owned snapshot, allocate nothing, and never
-access the chip. Existing public fields remain available for compatibility.
+`get_photo()`. Getters read an owned snapshot and never access the chip.
+Existing public fields remain available for compatibility.
+
+### Stored values and formatted values
+
+The card stores some values in a form built for machines rather than for
+display: names are comma-delimited, and the identifier is fifteen unbroken
+digits. The SDK never overwrites what it decoded. Every raw getter, public
+field, and serialized value keeps returning the stored form, and formatting is
+opt-in through a separate getter.
+
+| Stored | Formatted |
+| --- | --- |
+| `get_name()` → `Some("AHMED,ALI,,ALKAABI")` | `get_formatted_name()` → `Some("AHMED ALI ALKAABI")` |
+| `get_id_number()` → `"784198512345671"` | `formatted_id_number()` → `"784-1985-1234567-1"` |
+| `get_gender()` → `Some("M")` | `gender()` → `Some(Gender::Male)` |
+
+Formatting reproduces what the card prints: separators become spaces, and the
+identifier takes its printed grouping. Anything beyond that stays with the
+application. `gender()` returns a typed value rather than a label because
+`Male` and `ذكر` are translations, not card data, and the card's own `Sex`
+field prints `M`. Unrecognized codes are preserved in `Gender::Unrecognized`
+so an unknown value never becomes an absent one.
+
+`name_components_in()` borrows the stored components in card order and keeps
+empty positions, so nothing is lost; `get_formatted_name()` drops them. The SDK
+does not identify which position holds a given name or a family name.
 
 Optional values return `None` when absent. Inspect `card.read_status` to
 distinguish `Read`, `NotRequested`, `NotAvailable`, and `Protected` groups.

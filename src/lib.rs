@@ -11,9 +11,10 @@
 //! # fn main() -> Result<(), emirates_id_reader::Error> {
 //! let session = CardSession::connect_first()?;
 //! let card = session.read_with_options(ReadOptions::identity_only())?;
-//! let name = card.get_name();
-//! let id = card.get_id_number();
-//! // Bind borrowed values to your UI without logging personal data.
+//! let name = card.get_formatted_name();
+//! let id = card.formatted_id_number();
+//! // Bind the values to your UI without logging personal data. The stored
+//! // values stay available through `get_name()` and `get_id_number()`.
 //! # Ok(())
 //! # }
 //! ```

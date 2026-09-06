@@ -280,13 +280,18 @@ pub const PROTECTED_AND_SKIPPED_FIELDS: &[&str] = &[
 ];
 
 impl EmiratesIdData {
-    /// Returns the English full name, falling back to Arabic if English is absent.
-    /// No chip access or allocation occurs. Use [`Self::get_name_in`] for an exact language.
+    /// Returns the English full name exactly as the card stores it, falling back
+    /// to Arabic if English is absent. The card delimits name components with
+    /// commas, so this value is not a display string; use
+    /// [`Self::get_formatted_name`] for that, or [`Self::name_components_in`] for
+    /// the stored positions. No chip access or allocation occurs. Use
+    /// [`Self::get_name_in`] for an exact language.
     pub fn get_name(&self) -> Option<&str> {
         self.get_name_in(Language::English)
             .or_else(|| self.get_name_in(Language::Arabic))
     }
-    /// Returns the full name in the requested language, without fallback.
+    /// Returns the full name in the requested language exactly as stored, without
+    /// fallback. See [`Self::get_name`] for why this may contain comma separators.
     pub fn get_name_in(&self, language: Language) -> Option<&str> {
         match language {
             Language::English => self.non_modifiable.full_name_english.as_deref(),
@@ -304,6 +309,7 @@ impl EmiratesIdData {
         self.holder_signature_image.as_deref()
     }
     /// Returns the 15-digit Emirates ID number, preserving leading zeroes.
+    /// Use [`Self::formatted_id_number`] for the grouping printed on the card.
     pub fn get_id_number(&self) -> &str {
         &self.id_number
     }
@@ -332,6 +338,7 @@ impl EmiratesIdData {
         self.non_modifiable.expiry_date.as_deref()
     }
     /// Returns the gender code exactly as stored, when populated.
+    /// Use [`Self::gender`] for the interpreted value.
     pub fn get_gender(&self) -> Option<&str> {
         self.non_modifiable.gender.as_deref()
     }
@@ -344,6 +351,115 @@ impl EmiratesIdData {
         match language {
             Language::English => self.non_modifiable.nationality_english.as_deref(),
             Language::Arabic => self.non_modifiable.nationality_arabic.as_deref(),
+        }
+    }
+    /// Interprets the stored gender code. An unrecognized code yields
+    /// [`Gender::Unrecognized`] rather than `None`, so an unknown value stays
+    /// distinguishable from an absent one. [`Self::get_gender`] still returns the
+    /// code exactly as the card stored it.
+    pub fn gender(&self) -> Option<Gender> {
+        self.get_gender().map(Gender::from_code)
+    }
+    /// Borrows the stored name components for `language`, in card order.
+    ///
+    /// The card delimits name components with commas. Empty positions are
+    /// preserved so callers can see the structure the card stored; the SDK does
+    /// not identify which position holds a given name or a family name. Each
+    /// component is trimmed of surrounding whitespace. The iterator yields nothing
+    /// when the field is absent, and a value holding no separator yields exactly
+    /// one component. Use [`Self::get_formatted_name_in`] for a display string.
+    pub fn name_components_in(&self, language: Language) -> impl Iterator<Item = &str> {
+        self.get_name_in(language)
+            .into_iter()
+            .flat_map(|name| name.split(',').map(str::trim))
+    }
+    /// Returns the name in `language` formatted for display, without fallback.
+    ///
+    /// Comma separators become single spaces, empty positions are dropped, and the
+    /// result is trimmed. Capitalization, spelling, diacritics, and component order
+    /// are preserved. A field that is absent, or that holds only separators and
+    /// whitespace, returns `None`, matching how the decoder treats an empty value.
+    pub fn get_formatted_name_in(&self, language: Language) -> Option<String> {
+        let mut formatted = String::new();
+        for component in self
+            .name_components_in(language)
+            .filter(|component| !component.is_empty())
+        {
+            if !formatted.is_empty() {
+                formatted.push(' ');
+            }
+            formatted.push_str(component);
+        }
+        (!formatted.is_empty()).then_some(formatted)
+    }
+    /// Returns the formatted English name, falling back to Arabic if English is
+    /// absent. See [`Self::get_formatted_name_in`] for the formatting rules.
+    ///
+    /// The fallback is slightly wider than [`Self::get_name`]: an English field
+    /// holding only separators has no formatted value, so Arabic is used, whereas
+    /// [`Self::get_name`] would return the stored separators.
+    pub fn get_formatted_name(&self) -> Option<String> {
+        self.get_formatted_name_in(Language::English)
+            .or_else(|| self.get_formatted_name_in(Language::Arabic))
+    }
+    /// Returns the Emirates ID number grouped as `784-YYYY-NNNNNNN-C`, the form
+    /// printed on the card.
+    ///
+    /// A read always produces fifteen ASCII digits, but [`Self::id_number`] is a
+    /// public field that a caller can replace; any value which is not exactly
+    /// fifteen ASCII digits is returned unchanged.
+    pub fn formatted_id_number(&self) -> String {
+        let digits = self.id_number.as_str();
+        if digits.len() != 15 || !digits.bytes().all(|byte| byte.is_ascii_digit()) {
+            return digits.to_string();
+        }
+        format!(
+            "{}-{}-{}-{}",
+            &digits[..3],
+            &digits[3..7],
+            &digits[7..14],
+            &digits[14..]
+        )
+    }
+}
+
+/// Gender interpreted from the code stored by the card.
+///
+/// Only the `M` and `F` codes are interpreted. Display labels such as `Male` or
+/// `ذكر` are deliberately left to the application: they are translations rather
+/// than card data, and the card's own `Sex` field prints the code. Use
+/// [`Gender::code`] for the value the document shows.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Gender {
+    /// The card stores the `M` code.
+    Male,
+    /// The card stores the `F` code.
+    Female,
+    /// The card stores a code this SDK does not interpret, preserved as read.
+    Unrecognized(String),
+}
+
+impl Gender {
+    /// Interprets a stored gender code. Matching is ASCII case-insensitive, so
+    /// both `m` and `M` yield [`Gender::Male`].
+    pub fn from_code(code: &str) -> Self {
+        if code.eq_ignore_ascii_case("M") {
+            Self::Male
+        } else if code.eq_ignore_ascii_case("F") {
+            Self::Female
+        } else {
+            Self::Unrecognized(code.to_string())
+        }
+    }
+    /// Returns the canonical uppercase code, matching the `Sex` field printed on
+    /// the card. An unrecognized value is returned exactly as the card stored it,
+    /// without case conversion.
+    pub fn code(&self) -> &str {
+        match self {
+            Self::Male => "M",
+            Self::Female => "F",
+            Self::Unrecognized(code) => code,
         }
     }
 }

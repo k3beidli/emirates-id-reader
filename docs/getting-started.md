@@ -44,20 +44,32 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ReadOptions::identity_only().with_photo(true),
     )?;
 
-    let id = card.get_id_number();
-    let name = card.get_name();
-    let arabic_name = card.get_name_in(Language::Arabic);
+    let id = card.formatted_id_number();
+    let name = card.get_formatted_name();
+    let arabic_name = card.get_formatted_name_in(Language::Arabic);
     let photo = card.get_photo();
-    // Pass these borrowed values to your application's UI.
+    // Pass these values to your application's UI.
     // The example deliberately does not print identity values.
     let _ = (id, name, arabic_name, photo);
     Ok(())
 }
 ```
 
-`get_name()` prefers English, with Arabic as a fallback. `get_name_in()`
-returns only the requested language. Names retain the card's content,
-including punctuation; the SDK does not transliterate or split names.
+`get_formatted_name()` prefers English, with Arabic as a fallback.
+`get_formatted_name_in()` returns only the requested language.
+
+The card delimits name components with commas, so the stored English name looks
+like `AHMED,ALI,,ALKAABI`. The formatted accessors replace those separators with
+single spaces and drop empty positions, giving `AHMED ALI ALKAABI`. Everything
+else is left alone: the SDK preserves capitalization, spelling, diacritics, and
+component order, and never transliterates a name or decides which position holds
+a given name or a family name.
+
+Nothing is overwritten. `get_name()` and `get_name_in()` still return the stored
+value with its separators, `name_components_in()` borrows the individual
+components including empty positions, and serialization is unchanged. The same
+applies to the identifier: `formatted_id_number()` groups it as printed, and
+`get_id_number()` still returns the fifteen stored digits.
 
 `get_photo()` returns `Option<&[u8]>`. A missing value can mean a blank field,
 a skipped read, a missing file, or a protected file. Inspect

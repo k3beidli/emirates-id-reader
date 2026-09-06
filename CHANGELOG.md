@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- Added opt-in formatting accessors: `get_formatted_name()`,
+  `get_formatted_name_in()`, `name_components_in()`, and
+  `formatted_id_number()`. Name formatting replaces the card's comma separators
+  with spaces and drops empty positions; ID formatting applies the printed
+  `784-YYYY-NNNNNNN-C` grouping and returns any other value unchanged.
+- Added a `Gender` type with `from_code()` and `code()`, plus the `gender()`
+  accessor. Unrecognized codes are preserved in `Gender::Unrecognized` rather
+  than discarded. The SDK supplies no gender labels; translations stay with the
+  application.
+- All of the above are additive. Existing accessors, public fields, and Serde
+  output are unchanged, so decoded card values are never overwritten.
+- Documented the rule that decides what the SDK formats: format toward what the
+  card prints, and leave anything beyond that to the application.
 - Added the card-reader animation as a GIF in the README.
 
 ## 0.4.0 - 2026-09-05
