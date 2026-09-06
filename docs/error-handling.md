@@ -5,7 +5,7 @@
 A read returns either a complete `EmiratesIdData` snapshot or an `Error`.
 Optional groups that were disabled, absent, or refused have a `read_status`
 entry instead of a value. Transport failures and malformed data return `Err`;
-the SDK does not return a partial snapshot for those failures.
+the library does not return a partial snapshot for those failures.
 
 ## Error kinds
 
@@ -64,7 +64,7 @@ holds a value.
 For the photo, extended data, and signature files, the card's own response
 determines the status:
 
-| Card status word | SDK outcome |
+| Card status word | Library outcome |
 | --- | --- |
 | `6982`, `6985` | `DataGroupStatus::Protected` |
 | `6A82`, `6A83` | `DataGroupStatus::NotAvailable` |
@@ -76,19 +76,27 @@ must succeed; a transport failure or malformed content fails the read for any
 group, and no partial snapshot is ever returned.
 
 Retrying under the same access conditions does not unlock a `Protected` group.
-The SDK does not perform authentication or establish secure messaging. Fields the SDK never requests at all are listed in the
+The library does not perform authentication or establish secure messaging. Fields the library never requests at all are listed in the
 [field reference](field-reference.md) and explained in
 [security and access boundaries](security.md).
 
 ## Protocol recovery limits
 
-The SDK follows `61xx` response continuation, permits one `6Cxx` length
+The library follows `61xx` response continuation, permits one `6Cxx` length
 correction per command, and caps a complete APDU exchange at 32 responses. It
-accepts data returned with the `6282` end-of-file warning. Public files are
+accepts `6282` only for a `READ BINARY` operation, including its response
+continuation; `SELECT` warnings remain errors. Public files are
 bounded to 16 KiB including their four-byte header, and empty continuation
 chunks are errors. Application-root fallback happens only when the public
 directory is reported absent, never on a transport or security failure.
 
 Do not build a tight retry loop. Allow user intervention or bounded application
-backoff, and reconnect after a removal or reset. The SDK performs no automatic
+backoff, and reconnect after a removal or reset. The library performs no automatic
 reconnection and no authentication.
+
+## Native diagnostics
+
+`error.pcsc_code()` returns the original PC/SC code as `Option<u32>`.
+`error.status_word` is reserved for ISO card responses. Match on `ErrorKind`
+for recovery and use the numeric fields for diagnostics; messages are not stable.
+`ErrorKind` is non-exhaustive, so include a fallback arm.

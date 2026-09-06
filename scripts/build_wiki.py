@@ -31,7 +31,6 @@ PAGES = {
     "Security": "docs/security.md",
     "Contributing": "CONTRIBUTING.md",
     "Testing": "docs/testing.md",
-    "Migration": "docs/migration.md",
     "Sources": "docs/sources.md",
     "Wiki-Setup": "docs/wiki-setup.md",
 }
@@ -64,7 +63,7 @@ SIDEBAR = [
     (None, ["Home"]),
     ("Getting started", ["Platforms", "Getting-Started"]),
     (
-        "Using the SDK",
+        "Using the library",
         [
             "Readers-And-Sessions",
             "Data-Model",
@@ -79,7 +78,7 @@ SIDEBAR = [
     ),
     ("Reference", ["API-Reference", "Field-Reference", "Error-Handling", "Card-Generations"]),
     ("How it works", ["Architecture", "Security"]),
-    ("Project", ["Contributing", "Testing", "Migration", "Sources", "Wiki-Setup"]),
+    ("Project", ["Contributing", "Testing", "Sources", "Wiki-Setup"]),
 ]
 
 MODELS = ["EmiratesIdData", "NonModifiableData", "ModifiableData", "ReadStatus", "ReadOptions"]
@@ -115,18 +114,27 @@ def struct_table(source, name):
     match = re.search(r"pub struct " + name + r" \{(.*?)\n\}", source, re.S)
     if match is None:
         raise ValueError(f"Public model {name} not found")
-    rows = [f"## {name}\n", "| Field | Rust type | Meaning |\n| --- | --- | --- |"]
+    rows = [f"## {name}\n", "| Field or accessor | Rust type | Meaning |\n| --- | --- | --- |"]
     comments = []
     for line in match.group(1).splitlines():
         line = line.strip()
         if line.startswith("///"):
             comments.append(line[3:].strip())
-        elif line.startswith("pub "):
-            field = re.fullmatch(r"pub (\w+): (.*),", line)
+        elif line.startswith(("pub ", "pub(crate) ")):
+            field = re.fullmatch(r"pub(?:\(crate\))? (\w+): (.*),", line)
             if field is None or not comments:
                 raise ValueError(f"Undocumented or unsupported field: {line}")
             description = " ".join(comments).replace("|", "\\|")
-            rows.append(f"| `{field[1]}` | `{field[2]}` | {description} |")
+            access = field[1]
+            if name == "EmiratesIdData":
+                access = {"photo_jpeg": "photo", "holder_signature_image": "signature",
+                          "non_modifiable": "identity", "modifiable": "extended"}.get(access, access) + "()"
+            field_type = field[2]
+            if name == "EmiratesIdData":
+                field_type = {"String": "&str", "Option<Vec<u8>>": "Option<&[u8]>",
+                              "NonModifiableData": "&NonModifiableData", "ModifiableData": "&ModifiableData",
+                              "ReadStatus": "&ReadStatus"}.get(field_type, field_type)
+            rows.append(f"| `{access}` | `{field_type}` | {description} |")
             comments = []
     rows.append("")
     return rows
@@ -147,8 +155,9 @@ def skipped_fields(source):
     if not names:
         raise ValueError("PROTECTED_AND_SKIPPED_FIELDS is empty")
     return [
-        "## Fields not read by this SDK\n",
-        "Not read by this SDK; access restrictions apply.\n",
+        '<a id="fields-not-read-by-this-sdk"></a>\n\n',
+        "## Fields not read by this library\n",
+        "Not read by this library; access restrictions apply.\n",
         reason + "\n",
         *(f"- {name}" for name in names),
         "",
@@ -170,7 +179,7 @@ def field_reference():
         "- [Extended information](#modifiabledata)\n"
         "- [Group statuses](#readstatus)\n"
         "- [Read options](#readoptions)\n"
-        "- [Fields not read](#fields-not-read-by-this-sdk)\n",
+        "- [Fields not read](#fields-not-read-by-this-library)\n",
         "`Option` fields can be absent. Check the containing group's read status "
         "before interpreting `None`. For examples and formatting rules, see "
         "[names](names.md), [codes and identifiers](codes-and-identifiers.md), "
@@ -233,7 +242,7 @@ def main():
     outputs[ROOT / "docs/wiki/_Footer.md"] = (
         "[Source repository](https://github.com/k3beidli/emirates-id-reader) | "
         "[Getting started](Getting-Started) | [Security](Security)\n\n"
-        f"Emirates ID Reader SDK v{version}. Unofficial. "
+        f"Emirates ID Reader Library v{version}. Unofficial. "
         "Windows, Linux, and macOS contact PC/SC. "
         "Generated from the repository documentation; edit the source guides.\n"
     )

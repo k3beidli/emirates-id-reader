@@ -1,0 +1,6 @@
+{
+  "identifier": "main",
+  "description": "Local reader sample window; no filesystem or network plugins.",
+  "windows": ["main"],
+  "permissions": ["core:event:allow-listen", "core:event:allow-unlisten"]
+}

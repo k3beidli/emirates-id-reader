@@ -2,10 +2,10 @@
   <img src="docs/media/card-reader.webp" width="240" alt="Animated Emirates ID card being inserted into a chip reader">
 </p>
 
-<h1 align="center">Emirates ID Reader SDK</h1>
+<h1 align="center">Emirates ID Reader Library</h1>
 
 <p align="center">
-  A Rust SDK for Emirates ID contact chips<br>
+  A Rust library for Emirates ID contact chips<br>
   <strong>v0.1.0 · Experimental</strong>
 </p>
 
@@ -33,8 +33,7 @@ Other PC/SC readers may work, but **no other reader models have been tested**.
 V1 and V2 use the same data model. Field availability depends on the card and
 read options. See [card compatibility](https://github.com/k3beidli/emirates-id-reader/wiki/Card-Generations)
 and [testing details](https://github.com/k3beidli/emirates-id-reader/wiki/Testing)
-for the historical results and current validation limits. Automated build and
-synthetic tests do not establish reader compatibility.
+for validation details.
 
 **Fingerprint scanning has not been implemented yet.** Reading fingerprint
 templates from the chip is also not implemented.
@@ -46,7 +45,7 @@ It does not bypass protected files.
 
 Requires **Rust 1.85+** and your platform's PC/SC prerequisites. Follow the
 [installation guide](https://github.com/k3beidli/emirates-id-reader/wiki/Platforms),
-then add the SDK directly from GitHub:
+then add the library directly from GitHub:
 
 ```toml
 [dependencies]
@@ -55,6 +54,15 @@ emirates-id-reader = { git = "https://github.com/k3beidli/emirates-id-reader" }
 
 Keep your application's `Cargo.lock` under version control to retain the resolved
 Git revision.
+
+**Optional serialization:** Enable the `serde` feature if you need to serialize
+card data. It is not required for reading cards or using getters.
+
+```toml
+emirates-id-reader = { git = "https://github.com/k3beidli/emirates-id-reader", features = ["serde"] }
+```
+
+See [serialization details](https://github.com/k3beidli/emirates-id-reader/wiki/API-Reference#serialization).
 
 <a id="reading-and-accessing-data"></a>
 <a id="stored-values-and-formatted-values"></a>
@@ -69,9 +77,9 @@ fn main() -> Result<(), emirates_id_reader::Error> {
     let options = ReadOptions::identity_only().with_photo(true);
     let card = session.read_with_options(options)?;
 
-    let name = card.get_formatted_name();
+    let name = card.formatted_name();
     let id = card.formatted_id_number();
-    let photo = card.get_photo();
+    let photo = card.photo();
 
     // Pass these values to your UI; getters make no additional chip reads.
     let _ = (name, id, photo);
@@ -80,11 +88,28 @@ fn main() -> Result<(), emirates_id_reader::Error> {
 }
 ```
 
-Original decoded values remain available through `get_name()`, `get_id_number()`,
-and the public fields. See [names and formatting](https://github.com/k3beidli/emirates-id-reader/wiki/Names)
+Original decoded values remain available through `name()`, `id_number()`,
+and fields borrowed through `identity()` and `extended()`. See [names and formatting](https://github.com/k3beidli/emirates-id-reader/wiki/Names)
 for Arabic/English selection and comma separators.
 
 <a id="examples-and-diagnostic-cli"></a>
+
+## Sample app
+
+The Windows sample app lets you read an Emirates ID without writing code. Select
+a connected reader, view bilingual card details, and copy individual values.
+Automatic reading is enabled by default, with manual reading available too.
+
+Run the portable EXE directly; no app installer is needed. Windows requires
+WebView2 Runtime and your reader's driver. See the [sample app guide](examples/desktop/README.md)
+for source code, build instructions, and usage.
+
+[Download the latest release](https://github.com/k3beidli/emirates-id-reader/releases/latest).
+
+![Emirates ID Reader sample app](docs/media/sample-app-preview.png)
+
+> **Preview:** All personal data, identifiers, the portrait, and the signature
+> shown in this image are fictional sample content.
 
 ## Documentation
 

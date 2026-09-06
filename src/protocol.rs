@@ -4,6 +4,8 @@ use crate::{
     CardGeneration, DataGroupStatus, EmiratesIdData, Error, ErrorKind, ModifiableData, ReadOptions,
     ReadStatus,
 };
+// Fixed chip file identifiers, not cardholder values. Personal data is decoded
+// from the bytes returned by the connected card on each read.
 const PUBLIC_DATA_DIRECTORY: u16 = 0x0200;
 const IDENTITY_FILE: u16 = 0x0201;
 const PHOTO_FILE: u16 = 0x0202;

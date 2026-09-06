@@ -17,12 +17,12 @@ default; keep personal values out of logs and issues.
 | `Unknown` generation | ATR is outside the known list; read may still work, support is not guaranteed |
 | No photo after identity-only read | Use `.with_photo(true)` and inspect `read_status.photo` |
 | No optional field despite `Read` status | File was read but the field may be blank/absent |
-| Protected photo or extended data | SDK cannot authenticate protected files; handle missing data |
+| Protected photo or extended data | Library cannot authenticate protected files; handle missing data |
 | Getter returns old data after reinsertion | Discard old snapshot/session and reconnect |
 | UI freezes during reading | Move blocking PC/SC work off the UI thread |
-| `InvalidData` after upgrading | The SDK rejects corruption the extracted code previously ignored; see migration guide |
+| `InvalidData` | A required value or card response failed validation; see [errors and read statuses](Error-Handling) |
 
-Report the SDK revision, Rust version, operating system/version, reader model, generation,
+Report the library revision, Rust version, operating system/version, reader model, generation,
 error kind/status word, and reproduction steps. Do not submit photographs,
 card dumps, full debug snapshots, personal identifiers, or proprietary keys.
 See [errors and read statuses](Error-Handling) for what each error kind and

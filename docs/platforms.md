@@ -2,7 +2,7 @@
 
 # Installation and platforms
 
-The SDK uses native PC/SC through the
+The library uses native PC/SC through the
 [pcsc bindings](https://github.com/bluetech/pcsc-rust), with one Rust API for
 Windows, Linux, and macOS.
 
@@ -11,10 +11,7 @@ macOS are expected to work through their native PC/SC backends, but neither has
 been hardware-tested. No other reader models have been tested. CI builds and
 synthetic tests do not verify communication with a physical reader.
 
-The setup instructions below cover the intended platforms. See
-[testing and hardware validation](testing.md) for the evidence and remaining
-checks. Browser/WebUSB readers, mobile platforms, contactless NFC, and bindings
-for other languages are not implemented.
+See [testing and hardware validation](testing.md) for compatibility details.
 
 ## Requirements
 
@@ -22,8 +19,7 @@ for other languages are not implemented.
 - Rust 1.85 or newer and the platform build toolchain.
 - A PC/SC contact reader with its normal driver, and an inserted Emirates ID.
 
-Card reading requires no proprietary toolkit, application server, or network
-connection. Installing the SDK and its dependencies may require downloads.
+Card reading works locally without a proprietary toolkit.
 
 | Platform | Native library | Build prerequisite | Runtime prerequisite |
 | --- | --- | --- | --- |
@@ -46,9 +42,14 @@ emirates-id-reader = { path = "../emirates-id-reader" }
 ```
 
 Commit your application's `Cargo.lock` to retain the resolved Git revision. For
-a release you can also pin `rev = "<full reviewed commit SHA>"`. Version 0.1.0
-is the package version in this repository; these instructions assume neither a
-crates.io publication nor a Git release tag.
+a release you can also pin `rev = "<full reviewed commit SHA>"`.
+
+## Optional serialization
+
+The default build does not depend on Serde. Add `features = ["serde"]` to the
+dependency to enable `Serialize` for snapshots, records, statuses, and errors.
+The desktop app enables this feature for its Tauri bridge. No `Deserialize`
+implementation is provided for hardware snapshots.
 
 ## Windows
 
@@ -73,7 +74,7 @@ user and adjust the system's PC/SC access policy if it denies access; elevated
 execution should not be the application's default.
 
 Cross-compilation needs the target's PC/SC library and pkg-config setup, not
-just a Rust target. Native CI builds avoid that ambiguity.
+just a Rust target.
 
 ## macOS
 
@@ -94,9 +95,6 @@ cargo run --features cli -- read
 
 Reads redact by default. `probe` reports reader and ATR connectivity without
 reading personal fields. Run the [hardware checklist](testing.md) for your
-reader and card generation. CI exercises native builds and synthetic tests and
-attaches no physical reader; historical V1/V2 hardware evidence is
-Windows-specific; Linux and macOS reader compatibility needs separate hardware
-validation.
+reader and card generation.
 
 Continue with [your first read](getting-started.md).

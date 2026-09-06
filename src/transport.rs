@@ -23,7 +23,7 @@ pub(crate) struct Connection {
 }
 
 fn native_error(operation: &str, error: pcsc::Error) -> Error {
-    Error::pcsc(operation, error as i32)
+    Error::pcsc(operation, error)
 }
 fn context() -> Result<Context, Error> {
     Context::establish(Scope::User).map_err(|error| native_error("SCardEstablishContext", error))
@@ -116,6 +116,19 @@ impl Connection {
             Err(error) => Err(error),
         }
     }
+    pub(crate) fn close(self) -> Result<(), Error> {
+        // Recover a poisoned mutex to still release its native handle.
+        let mut handle = self
+            .card
+            .into_inner()
+            .unwrap_or_else(|error| error.into_inner());
+        match handle.0.take() {
+            Some(card) => card
+                .disconnect(Disposition::LeaveCard)
+                .map_err(|(_, error)| native_error("SCardDisconnect", error)),
+            None => Ok(()),
+        }
+    }
     pub(crate) fn reader_name(&self) -> &str {
         &self.reader_name
     }
@@ -153,7 +166,7 @@ impl Connection {
 }
 
 pub(crate) fn transmit(card: &pcsc::Card, request: &[u8]) -> Result<Vec<u8>, Error> {
-    let mut buffer = vec![0; 65_538];
+    let mut buffer = [0; pcsc::MAX_BUFFER_SIZE];
     exchange_apdu(request, |command| {
         let response = card
             .transmit(command, &mut buffer)

@@ -1,4 +1,4 @@
-use emirates_id_reader::{CardSession, ReadOptions};
+use emirates_id_reader::CardSession;
 
 fn report_optional(label: &str, value: Option<&str>) {
     match value {
@@ -18,24 +18,24 @@ fn probe() -> Result<(), String> {
 fn read(redacted: bool, identity_only: bool) -> Result<(), String> {
     let session = CardSession::connect_first().map_err(|error| error.to_string())?;
     let card = if identity_only {
-        session.read_with_options(ReadOptions::identity_only())
+        session.read_identity()
     } else {
-        session.read()
+        session.read_all()
     }
     .map_err(|error| error.to_string())?;
-    println!("Reader: {}", card.reader_name);
+    println!("Reader: {}", card.reader_name());
     println!("Toolkit-free direct card read: successful");
-    println!("Card generation: {:?}", card.card_generation);
+    println!("Card generation: {:?}", card.card_generation());
     if redacted {
         println!(
             "ID number: read successfully ({} characters)",
-            card.id_number.chars().count()
+            card.id_number().chars().count()
         );
         println!(
             "Card number: read successfully ({} characters)",
-            card.card_number.chars().count()
+            card.card_number().chars().count()
         );
-        let non_modifiable = &card.non_modifiable;
+        let non_modifiable = card.identity();
         report_optional("ID type", non_modifiable.id_type.as_deref());
         report_optional("Issue date", non_modifiable.issue_date.as_deref());
         report_optional("Expiry date", non_modifiable.expiry_date.as_deref());
@@ -72,7 +72,7 @@ fn read(redacted: bool, identity_only: bool) -> Result<(), String> {
             non_modifiable.place_of_birth_english.as_deref(),
         );
 
-        let modifiable = &card.modifiable;
+        let modifiable = card.extended();
         report_optional("Occupation code", modifiable.occupation_code.as_deref());
         report_optional("Arabic occupation", modifiable.occupation_arabic.as_deref());
         report_optional(
@@ -197,31 +197,22 @@ fn read(redacted: bool, identity_only: bool) -> Result<(), String> {
             "English mother name",
             modifiable.mother_full_name_english.as_deref(),
         );
-        println!(
-            "Photo: {} bytes",
-            card.photo_jpeg.as_deref().unwrap_or(&[]).len()
-        );
+        println!("Photo: {} bytes", card.photo().unwrap_or(&[]).len());
         println!(
             "Holder signature image: {} bytes",
-            card.holder_signature_image.as_deref().unwrap_or(&[]).len()
+            card.signature().unwrap_or(&[]).len()
         );
-        println!("Group status: {:?}", card.read_status);
+        println!("Group status: {:?}", card.read_status());
     } else {
-        println!("ID number: {}", card.id_number);
-        println!("Card number: {}", card.card_number);
+        println!("ID number: {}", card.id_number());
+        println!("Card number: {}", card.card_number());
         println!(
             "English full name: {}",
-            card.non_modifiable
-                .full_name_english
-                .as_deref()
-                .unwrap_or("")
+            card.identity().full_name_english.as_deref().unwrap_or("")
         );
         println!(
             "Arabic full name: {}",
-            card.non_modifiable
-                .full_name_arabic
-                .as_deref()
-                .unwrap_or("")
+            card.identity().full_name_arabic.as_deref().unwrap_or("")
         );
     }
     Ok(())

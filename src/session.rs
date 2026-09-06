@@ -1,4 +1,4 @@
-//! Public connection lifecycle, serialized reads, and SDK entry points.
+//! Public connection lifecycle, serialized reads, and library entry points.
 use crate::{CardGeneration, EmiratesIdData, Error, ErrorKind, ReadOptions};
 use crate::{protocol::Reader, transport::Connection};
 
@@ -13,10 +13,16 @@ pub struct CardSession {
 
 impl CardSession {
     /// Lists installed PC/SC readers. An empty list means no reader is installed.
+    ///
+    /// # Errors
+    /// Returns a PC/SC error if the system service cannot enumerate readers.
     pub fn reader_names() -> Result<Vec<String>, Error> {
         Connection::reader_names()
     }
     /// Connects to the exact reader name returned by [`Self::reader_names`].
+    ///
+    /// # Errors
+    /// Returns `InvalidArgument` for an empty name or embedded NUL, or a native connection error.
     pub fn connect(reader_name: &str) -> Result<Self, Error> {
         if reader_name.is_empty() || reader_name.contains('\0') {
             return Err(Error::new(
@@ -30,6 +36,9 @@ impl CardSession {
     }
     /// Connects to the first accessible reader containing a card.
     /// Non-presence failures are preserved if no connection succeeds.
+    ///
+    /// # Errors
+    /// Returns `NoReader`, `NoCard`, or the first non-absence connection failure.
     pub fn connect_first() -> Result<Self, Error> {
         Ok(Self {
             connection: Connection::connect_first()?,
@@ -52,16 +61,41 @@ impl CardSession {
         self.connection.card_generation()
     }
     /// Checks card presence without reading identity data.
+    ///
+    /// # Errors
+    /// Returns a PC/SC or synchronization error when presence cannot be determined. Removal returns `Ok(false)`.
     pub fn is_present(&self) -> Result<bool, Error> {
         self.connection.is_present()
     }
+    /// Disconnects explicitly, allowing the caller to observe cleanup errors.
+    /// This consumes the session and may block in the native driver.
+    ///
+    /// # Errors
+    /// Returns a PC/SC error if disconnection fails. Dropping a session instead
+    /// performs best-effort cleanup without reporting errors.
+    pub fn close(self) -> Result<(), Error> {
+        self.connection.close()
+    }
+    /// Reads only identifiers and core identity.
+    ///
+    /// # Errors
+    /// See [`Self::read_with_options`] for read failures.
+    pub fn read_identity(&self) -> Result<EmiratesIdData, Error> {
+        self.read_with_options(ReadOptions::identity_only())
+    }
     /// Reads all supported public groups into an owned snapshot.
-    pub fn read(&self) -> Result<EmiratesIdData, Error> {
+    ///
+    /// # Errors
+    /// See [`Self::read_with_options`] for read failures.
+    pub fn read_all(&self) -> Result<EmiratesIdData, Error> {
         self.read_with_options(ReadOptions::all())
     }
     /// Reads identifiers and core identity plus the requested optional groups.
     /// Transport and malformed-data errors fail the read; inaccessible optional
     /// groups are represented by [`crate::ReadStatus`].
+    ///
+    /// # Errors
+    /// Returns an error if required data cannot be read, any returned data is malformed, or transport/transaction cleanup fails. No partial snapshot is returned.
     pub fn read_with_options(&self, options: ReadOptions) -> Result<EmiratesIdData, Error> {
         self.connection.with_transaction(|transaction| {
             Reader {
@@ -69,5 +103,13 @@ impl CardSession {
             }
             .read(self.reader_name(), self.card_generation(), options)
         })
+    }
+}
+
+impl std::fmt::Debug for CardSession {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CardSession")
+            .field("card_generation", &self.card_generation())
+            .finish_non_exhaustive()
     }
 }

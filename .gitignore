@@ -10,3 +10,7 @@
 *.dmp
 .DS_Store
 Thumbs.db
+
+# Desktop dependencies and generated frontend bundles.
+**/node_modules/
+**/dist/

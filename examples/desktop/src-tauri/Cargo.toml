@@ -1,0 +1,23 @@
+[package]
+name = "emirates-id-reader-desktop"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+publish = false
+license = "MIT"
+description = "Sample app for the Emirates ID Reader Library"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+emirates-id-reader = { path = "../../..", features = ["serde"] }
+serde = { version = "1", features = ["derive"] }
+tauri = { version = "2", features = [] }
+pcsc = "2.9"
+tiff = { version = "0.11", default-features = false, features = ["fax"] }
+png = "0.18"
+
+[profile.release]
+opt-level = 2
+strip = true

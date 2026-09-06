@@ -3,7 +3,7 @@ use emirates_id_reader::CardSession;
 use std::{thread, time::Duration};
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let session = CardSession::connect_first()?;
-    let card = session.read()?;
+    let card = session.read_all()?;
     while session.is_present()? {
         thread::sleep(Duration::from_millis(200));
     }

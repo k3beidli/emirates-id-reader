@@ -1,1 +1,5 @@
 * text=auto eol=lf
+
+# Keep GitHub language statistics focused on the library.
+examples/desktop/** linguist-detectable=false
+scripts/build_wiki.py linguist-detectable=false

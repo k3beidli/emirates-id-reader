@@ -1,3 +1,5 @@
+// Synthetic parser/protocol fixtures only; no real card dumps or personal data.
+// This module is compiled only by cargo test (see cfg(test) in lib.rs).
 use crate::CardGeneration;
 use crate::apdu::exchange_apdu;
 use crate::decode::{
@@ -180,4 +182,31 @@ fn accepts_valid_data_returned_with_eof_warning() {
     })
     .unwrap();
     assert_eq!(data, vec![0x70, 0x01, 0x00, 0x00]);
+}
+
+#[test]
+fn eof_warning_is_scoped_to_read_binary_even_after_continuation() {
+    for instruction in [0xA4, 0xB0] {
+        for continued in [false, true] {
+            let mut calls = 0;
+            let result = exchange_apdu(&[0, instruction, 0, 0, 1], |command| {
+                calls += 1;
+                if continued && calls == 1 {
+                    return Ok((vec![1], 0x6101));
+                }
+                if continued {
+                    assert_eq!(command[1], 0xC0);
+                }
+                Ok((vec![2], 0x6282))
+            });
+            if instruction == 0xB0 {
+                assert_eq!(
+                    result.unwrap(),
+                    if continued { vec![1, 2] } else { vec![2] }
+                );
+            } else {
+                assert_eq!(result.unwrap_err().status_word, Some(0x6282));
+            }
+        }
+    }
 }

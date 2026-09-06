@@ -11,8 +11,8 @@ Linux and macOS are expected to work through their native PC/SC backends, but
 **no hardware testing has been performed on either platform**. Automated native
 builds and synthetic tests are separate from physical reader validation.
 
-The historical per-generation results are recorded below. They do not establish
-that every flow in the current SDK revision has been hardware-validated.
+The results below were reported for the earlier implementation. Repeat the
+checklist when validating a new release.
 Fingerprint scanning and reading fingerprint templates from the chip have not
 been implemented, so neither is covered by these results.
 
@@ -43,25 +43,14 @@ Run the following on at least one card from each chip generation:
 9. Reinsert it and confirm a fresh session reads it once without stale data.
 10. Run unit tests, Clippy, API docs, and `cargo package`.
 
-## Refactor validation
-
-The current SDK has synthetic protocol and API tests. The historical results below
-were supplied with the imported implementation; they are not new hardware results
-for the refactored implementation. Repeat this checklist on V1 and V2 before
-marking the new release hardware validated.
-
 <a id="evidence-table"></a>
 
-## Historical evidence (imported implementation)
+## Historical evidence (earlier implementation)
 
 | Generation | Reader | Core identity | Extended data | Photo | Signature image | Removal/reinsert | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | V1 | HID OMNIKEY 3121 | Pass | Pass on tested card | Pass on tested card | Pass on tested card | Pending | Reported pass; V1 lifecycle pending |
 | V2 | HID OMNIKEY 3121 | Pass | Pass | Pass | Pass | Pass | Reported pass |
-
-The table records compatibility, not card authenticity. Offline genuineness or
-digital-signature verification requires a separate trust policy and current
-ICP signing certificates; this version of the SDK does not claim it.
 
 The V1 result was obtained from a live card with ATR
 `3B 6A 00 00 80 65 A2 01 31 01 3D 72 D6 41`. Both `identity_only()` and full

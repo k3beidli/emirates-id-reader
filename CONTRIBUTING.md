@@ -1,6 +1,6 @@
 # Contributing
 
-Keep the SDK independent of any consuming application. Public API additions
+Keep the library independent of any consuming application. Public API additions
 need Rustdoc and a consumer-facing example. Preserve explicit missing-data
 semantics and add synthetic regression cases for parser/protocol changes.
 Never commit real identities, images, card dumps, credentials, proprietary
@@ -33,7 +33,7 @@ separate GitHub Wiki publishing procedure.
 
 ## Releases
 
-Update the package version, lockfile, migration notes, and changelog together.
+Update the package version, lockfile, and changelog together.
 Check the declared minimum Rust version as well as current stable. Validate
 the packed crate and relevant V1/V2 hardware flows before declaring hardware
 support for a release. Publishing a crate or release tag is a separate step;

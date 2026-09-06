@@ -10,7 +10,7 @@ fn main() -> Result<(), emirates_id_reader::Error> {
     let session = CardSession::connect_first()?;
     let card = session.read_with_options(ReadOptions::identity_only())?;
 
-    let name = card.get_formatted_name();
+    let name = card.formatted_name();
     // Pass the value to your UI without logging personal data.
     let _ = name;
     Ok(())
@@ -39,13 +39,14 @@ read and always required.
 
 | Constructor or builder | Effect |
 | --- | --- |
-| `ReadOptions::all()`, `ReadOptions::default()` | Every supported public group |
+| `ReadOptions::all()` | Every supported public group |
+| `ReadOptions::default()` | Identifiers and core identity only |
 | `ReadOptions::identity_only()` | Identifiers and core identity only |
 | `.with_photo(bool)` | Photograph |
 | `.with_modifiable_data(bool)` | Occupation, residency, passport, education |
-| `.with_holder_signature_image(bool)` | V2 signature image |
+| `.with_holder_signature_image(bool)` | Signature image when available |
 
-`session.read()` is `read_with_options(ReadOptions::all())`. The builders are
+`session.read_all()` is `read_with_options(ReadOptions::all())`. The builders are
 `const` and chainable, so `identity_only().with_photo(true)` is the usual way to
 add one group to a fast read.
 
@@ -61,10 +62,11 @@ blank or absent fields.
 | `atr()`, `atr_hex()` | `&[u8]`, `String` | ATR captured at connection |
 | `card_generation()` | `CardGeneration` | Classified from the ATR; not authentication |
 | `is_present()` | `Result<bool, Error>` | Presence check without rereading |
-| `read()`, `read_with_options()` | `Result<EmiratesIdData, Error>` | Fresh read |
+| `read_identity()`, `read_all()`, `read_with_options()` | `Result<EmiratesIdData, Error>` | Fresh read |
 
-There is no `close()`. Dropping a session disconnects the card and releases the
-PC/SC context. After a removal or a card reset, build a new session rather than
+Dropping a session performs best-effort disconnection and releases its resources.
+Use `session.close()` to consume it and report disconnect errors. Both may block
+in the native driver; perform cleanup on the reader worker. After a removal or a card reset, build a new session rather than
 retrying on the old handle.
 
 A snapshot owns its data and stays usable after its session is dropped, but it
@@ -74,7 +76,7 @@ never updates itself: it contains the values returned by that read.
 
 Every PC/SC call is synchronous and may block, including acquiring a
 transaction. Run reads on a dedicated worker or a blocking executor, never on a
-UI thread. There is no timeout, cancellation, or automatic retry in the SDK, and
+UI thread. There is no timeout, cancellation, or automatic retry in the library, and
 wrapping a read in an async timeout does not cancel the underlying native call.
 
 Reads on one session are serialized by a mutex and wrapped in a PC/SC

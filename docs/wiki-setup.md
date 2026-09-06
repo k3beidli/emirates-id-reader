@@ -4,11 +4,11 @@
 
 The canonical guides live in `docs/`. `scripts/build_wiki.py` turns them into
 the Wiki-ready pages in `docs/wiki/`, derives the field reference from the
-Rustdoc comments in `src/data.rs`, and writes the navigation. CI fails if any
+Rustdoc comments in `src/data.rs` (snapshot fields become accessor rows), and writes the navigation. CI fails if any
 generated file is stale, so generate and commit in the same change.
 
 Never edit anything in `docs/wiki/` or `docs/field-reference.md` directly.
-The Wiki footer takes the SDK version from `Cargo.toml`; regenerate it whenever
+The Wiki footer takes the library version from `Cargo.toml`; regenerate it whenever
 the package version changes, and update the README, Home, installation guide,
 and changelog in the same change.
 
@@ -59,7 +59,7 @@ than repeating them on every page.
 Keep examples synthetic and avoid printing names, identifiers, or image bytes.
 Cite official references beside the claims they support and record the document
 in [sources and acknowledgments](sources.md). Distinguish specification claims,
-SDK behavior, and historical hardware observations.
+library behavior, and historical hardware observations.
 
 <a id="copy-and-publish"></a>
 <a id="initialize-the-wiki-once"></a>
@@ -91,7 +91,7 @@ Copy-Item -Path ./docs/wiki/*.md -Destination $wikiPath
 git -C $wikiPath diff --stat
 git -C $wikiPath diff
 git -C $wikiPath add -- '*.md'
-git -C $wikiPath commit -m 'Document the Emirates ID Reader SDK'
+git -C $wikiPath commit -m 'Document the Emirates ID Reader Library'
 git -C $wikiPath push
 ```
 

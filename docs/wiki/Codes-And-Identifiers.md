@@ -7,17 +7,16 @@ intact and stops a code from being mistaken for a quantity.
 
 | Method | Returns | Value |
 | --- | --- | --- |
-| `get_id_number()` | `&str` | Fifteen stored digits |
+| `id_number()` | `&str` | Fifteen stored digits |
 | `formatted_id_number()` | `String` | Digits grouped as `3-4-7-1` |
-| `get_card_number()` | `&str` | Card serial stored by the ID application |
+| `card_number()` | `&str` | Card serial stored by the ID application |
 
 Both identifiers are required: a read fails rather than returning a snapshot
 without them, so neither is optional.
 
 `formatted_id_number()` applies the printed grouping only to exactly fifteen
-ASCII digits. A read always produces that, but `id_number` is a public field a
-caller can overwrite, so any other value is returned unchanged instead of being
-sliced. Formatting does not validate a check digit, infer a birth year, or prove
+ASCII digits, validated when a snapshot is read or built. Formatting does not
+validate a check digit, infer a birth year, or prove
 that the identifier was issued.
 
 `id_type` is a separate document-type code on `identity()`. It is not the card
@@ -25,7 +24,7 @@ number or the chip-generation classification.
 
 ## Gender
 
-The card stores a single-letter code. `gender()` interprets it; `get_gender()`
+The card stores a single-letter code. `gender()` interprets it; `gender_code()`
 returns it verbatim.
 
 ```rust
@@ -45,10 +44,10 @@ assert_eq!(other.code(), "X");
 never collapses into `None`, so "the card said something we do not interpret"
 stays distinguishable from "the card said nothing".
 
-Applications choose display labels such as `Male` or `ذكر`. The SDK maps `M`
+Applications choose display labels such as `Male` or `Ø°ÙƒØ±`. The library maps `M`
 and `F` to enum variants without providing translations. The
 [V1 specification](Sources#fields-stored-in-uae-id-card-v1) also lists `X`;
-it remains `Unrecognized("X")` because this SDK does not assign it a meaning.
+it remains `Unrecognized("X")` because this library does not assign it a meaning.
 That variant means unsupported interpretation, not an invalid card value.
 
 ## Other coded fields
@@ -56,19 +55,19 @@ That variant means unsupported interpretation, not an invalid card value.
 Occupation, occupation field, marital status, sponsor type, residency type,
 passport type, passport country, qualification level, field of study, and
 nationality all have code fields on [`identity()` or `extended()`](Field-Reference).
-They are returned as stored strings, with leading zeroes preserved. The SDK
+They are returned as stored strings, with leading zeroes preserved. The library
 interprets no code but gender, and ships no lookup tables for the rest.
 
 Where the card also stores a description for a code, both are available. For
 example `occupation_code` sits alongside `occupation_english` and
 `occupation_arabic`; `nationality_code` sits alongside `nationality_english`
 and `nationality_arabic`. Descriptions come from the card, so their availability
-varies by generation, and `get_nationality_in()` does not fall back between
+varies by generation, and `nationality_in()` does not fall back between
 languages the way the name accessors do.
 
 ## Related
 
-- [Data model and formatting](Data-Model) for what the SDK does and does not
+- [Data model and formatting](Data-Model) for what the library does and does not
   interpret
 - [Field reference](Field-Reference) for every code field and its type
 - [V1/V2 compatibility](Card-Generations) for which descriptions each

@@ -2,7 +2,7 @@
 - **Getting started**
   - [Installation and platforms](Platforms)
   - [Your first read](Getting-Started)
-- **Using the SDK**
+- **Using the library**
   - [Readers, sessions, and reading options](Readers-And-Sessions)
   - [Data model and formatting](Data-Model)
   - [Names](Names)
@@ -23,6 +23,5 @@
 - **Project**
   - [Contributing](Contributing)
   - [Testing and hardware validation](Testing)
-  - [Migration](Migration)
   - [Sources and acknowledgments](Sources)
   - [Documentation maintenance](Wiki-Setup)

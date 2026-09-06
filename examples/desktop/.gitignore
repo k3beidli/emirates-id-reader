@@ -1,0 +1,12 @@
+node_modules/
+dist/
+src-tauri/target/
+src-tauri/gen/
+
+# Local artwork backups, unpublished drafts, and retired preview builds.
+_unused/
+local-docs/
+local-preview/
+dist-preview/
+
+/release/

@@ -2,7 +2,7 @@
 
 # Security and access boundaries
 
-This SDK reads supported public files through the local PC/SC service. A
+This library reads supported public files through the local PC/SC service. A
 successful read provides decoded data; it does not authenticate the card or
 verify the identity of the person presenting it.
 
@@ -17,9 +17,11 @@ verify the identity of the person presenting it.
 - Snapshots remain in application memory until released. Dropping them does
   not guarantee memory zeroization or removal of copies held by the application.
 
-## Fields not read by this SDK
+<a id="fields-not-read-by-this-sdk"></a>
 
-The SDK does not request these address and contact fields:
+## Fields not read by this library
+
+The library does not request these address and contact fields:
 
 - Home address details
 - Work address details
@@ -27,13 +29,13 @@ The SDK does not request these address and contact fields:
 - Mobile phone number
 - Email address
 
-The imported implementation's access checks encountered protected files. This
-SDK has no authentication or secure-messaging support and leaves these fields
+The earlier implementation's access checks encountered protected files. This
+library has no authentication or secure-messaging support and leaves these fields
 outside its data model. Their absence does not mean the card has no such data.
 
 The exported `PROTECTED_AND_SKIPPED_FIELDS` constant lists these fields. They
 have no getter, snapshot field, or per-group status. See the generated
-[field reference](Field-Reference#fields-not-read-by-this-sdk).
+[field reference](Field-Reference#fields-not-read-by-this-library).
 
 Fingerprint scanning (capturing a fingerprint from a sensor) and reading
 fingerprint templates from the chip have not been implemented. Family-book
@@ -47,8 +49,8 @@ individual card. Those attempted reads receive a group status as described in
 ## Application responsibilities
 
 - Request only the groups your operation needs.
-- Avoid logging snapshots or attaching them to crash reports. Their `Debug`
-  and `Serialize` implementations include personal data.
+- `Debug` redacts snapshots and nested identity records. Individual fields and
+  serialization still contain personal values; keep them out of logs and crash reports.
 - Clear displayed data and retained copies when they are no longer needed,
   including after card removal in an interactive reader application.
 - Define access controls and retention rules for any data you choose to store
@@ -61,7 +63,7 @@ It does not prove a card is genuine. The
 [EIDA C++ developer guide](Sources#c-developer-guide), section 5.7, explicitly
 distinguishes ATR checks from the toolkit's separate genuineness operation.
 
-This SDK does not implement that operation, verify digital signatures, or
+This library does not implement that operation, verify digital signatures, or
 establish a certificate trust policy. Applications needing verified identity
 must address those requirements through an appropriate verification integration.
 Reading a photograph or holder-signature image is not signature verification.

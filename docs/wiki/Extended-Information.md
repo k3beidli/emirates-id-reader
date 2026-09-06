@@ -1,7 +1,7 @@
 # Extended information
 
 `extended()` holds the changeable and later-generation fields: employment,
-family, passport, residency, and education. `session.read()` includes the group;
+family, passport, residency, and education. `session.read_all()` includes the group;
 `ReadOptions::identity_only()` skips it. Enable it explicitly when using the
 identity-only options:
 
@@ -21,9 +21,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-`session.read()` requests this group along with everything else. There are no
-per-field accessors: the group is reached through `extended()`, which borrows
-`ModifiableData`.
+`extended()` borrows `ModifiableData`; access individual fields directly.
 
 ## What the group contains
 
@@ -44,7 +42,7 @@ Most descriptive text comes in both Arabic and English. Every field is
 
 Check `read_status.modifiable` before interpreting the fields. If the group
 was read, `None` means a field was absent or empty. Otherwise, its fields are
-`None` because the SDK did not obtain them:
+`None` because the library did not obtain them:
 
 ```rust,no_run
 use emirates_id_reader::{CardSession, DataGroupStatus, ReadOptions};
@@ -55,11 +53,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ReadOptions::identity_only().with_modifiable_data(true),
     )?;
 
-    match card.read_status.modifiable {
+    match card.read_status().modifiable {
         DataGroupStatus::Read => { /* None means a field was absent or empty */ }
         DataGroupStatus::NotRequested => { /* the option was disabled */ }
         DataGroupStatus::NotAvailable => { /* this card has no such file */ }
         DataGroupStatus::Protected => { /* the file needs authentication */ }
+        _ => { /* a status added in a future version */ }
     }
     Ok(())
 }
@@ -84,7 +83,7 @@ not branch on the generation label. See
 
 One field spans the difference: `mother_full_name_arabic` and
 `mother_full_name_english` hold a first name on V1 and may hold a full name on
-V2, through the same SDK fields.
+V2, through the same library fields.
 
 ## Related
 
@@ -92,4 +91,4 @@ V2, through the same SDK fields.
 - [Codes and identifiers](Codes-And-Identifiers) for how coded values behave
 - [Dates](Dates) for the residency, passport, and graduation dates
 - [Security and access boundaries](Security) for the address, phone, and
-  email fields this SDK never requests
+  email fields this library never requests

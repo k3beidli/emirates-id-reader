@@ -3,31 +3,50 @@ name = "emirates-id-reader"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.85"
+autoexamples = false
 description = "A Rust library for reading data from Emirates ID chips."
 license = "MIT"
 repository = "https://github.com/k3beidli/emirates-id-reader"
 readme = "README.md"
 documentation = "https://github.com/k3beidli/emirates-id-reader/wiki"
 keywords = ["emirates-id", "smartcard", "pcsc", "uae", "iso7816"]
-categories = ["api-bindings", "hardware-support"]
+categories = ["hardware-support"]
 # Anchor patterns at this package root so nested app READMEs/licenses do not match.
-# The negated paths keep companion-app guides out of the SDK archive if those
+# The negated paths keep sample-app guides out of the library archive if those
 # pages are added under docs/ or generated into docs/wiki/ in the future.
-include = ["/src/**", "/docs/**/*.md", "/docs/media/*.webp", "/examples/**", "/scripts/build_wiki.py", "/CONTRIBUTING.md", "/Cargo.toml", "/README.md", "/CHANGELOG.md", "/LICENSE", "!/docs/sample-app.md", "!/docs/wiki/Sample-App.md"]
+include = ["/src/**", "/tests/**", "/docs/**/*.md", "/docs/media/*.webp", "/docs/media/sample-app-preview.png", "/examples/snippets/**", "/scripts/build_wiki.py", "/CONTRIBUTING.md", "/SECURITY.md", "/Cargo.toml", "/README.md", "/CHANGELOG.md", "/LICENSE", "!/docs/sample-app.md", "!/docs/wiki/Sample-App.md"]
 
 [features]
 default = []
 # Diagnostic utility is opt-in; consumers receive only the library by default.
 cli = []
+# Optional serialization for IPC and application storage.
+serde = ["dep:serde"]
 
 [[bin]]
 name = "emirates-id-reader"
 path = "src/main.rs"
 required-features = ["cli"]
 
+[[example]]
+name = "read_identity"
+path = "examples/snippets/read_identity.rs"
+
+[[example]]
+name = "read_photo"
+path = "examples/snippets/read_photo.rs"
+
+[[example]]
+name = "watch_removal"
+path = "examples/snippets/watch_removal.rs"
+
 [dependencies]
 pcsc = "2.9"
-serde = { version = "1", features = ["derive"] }
+serde = { version = "1", features = ["derive"], optional = true }
+
+[dev-dependencies]
+serde_json = "1"
 
 [package.metadata.docs.rs]
+features = ["serde"]
 targets = ["x86_64-pc-windows-msvc", "x86_64-unknown-linux-gnu", "aarch64-apple-darwin"]

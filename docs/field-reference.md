@@ -7,27 +7,27 @@ Look up the fields in a read result, the status of each group, and the options u
 - [Extended information](#modifiabledata)
 - [Group statuses](#readstatus)
 - [Read options](#readoptions)
-- [Fields not read](#fields-not-read-by-this-sdk)
+- [Fields not read](#fields-not-read-by-this-library)
 
 `Option` fields can be absent. Check the containing group's read status before interpreting `None`. For examples and formatting rules, see [names](names.md), [codes and identifiers](codes-and-identifiers.md), [dates](dates.md), [photos and signatures](photos-and-signatures.md), or [extended information](extended-information.md).
 
 ## EmiratesIdData
 
-| Field | Rust type | Meaning |
+| Field or accessor | Rust type | Meaning |
 | --- | --- | --- |
-| `reader_name` | `String` | Name of the native PC/SC reader. |
-| `card_generation` | `CardGeneration` | Chip generation classified from the ATR. |
-| `id_number` | `String` | Required 15-character Emirates ID number. |
-| `card_number` | `String` | Required card number/serial stored by the ID application. |
-| `photo_jpeg` | `Option<Vec<u8>>` | JPEG photograph bytes, when requested and accessible. |
-| `holder_signature_image` | `Option<Vec<u8>>` | Holder-signature image payload, when requested and available. |
-| `non_modifiable` | `NonModifiableData` | Core identity data. |
-| `modifiable` | `ModifiableData` | Optional changeable and V2 extension data. |
-| `read_status` | `ReadStatus` | Per-group access outcome for this read. |
+| `reader_name()` | `&str` | Name of the native PC/SC reader. |
+| `card_generation()` | `CardGeneration` | Chip generation classified from the ATR. |
+| `id_number()` | `&str` | Required 15-character Emirates ID number. |
+| `card_number()` | `&str` | Required card number/serial stored by the ID application. |
+| `photo()` | `Option<&[u8]>` | JPEG photograph bytes, when requested and accessible. |
+| `signature()` | `Option<&[u8]>` | Holder-signature image payload, when requested and available. |
+| `identity()` | `&NonModifiableData` | Core identity data. |
+| `extended()` | `&ModifiableData` | Optional changeable and V2 extension data. |
+| `read_status()` | `&ReadStatus` | Per-group access outcome for this read. |
 
 ## NonModifiableData
 
-| Field | Rust type | Meaning |
+| Field or accessor | Rust type | Meaning |
 | --- | --- | --- |
 | `id_type` | `Option<String>` | Card/document type code. |
 | `issue_date` | `Option<String>` | Issue date as `YYYY-MM-DD`. |
@@ -46,7 +46,7 @@ Look up the fields in a read result, the status of each group, and the options u
 
 ## ModifiableData
 
-| Field | Rust type | Meaning |
+| Field or accessor | Rust type | Meaning |
 | --- | --- | --- |
 | `occupation_code` | `Option<String>` | Occupation code, preserving leading zeroes. |
 | `occupation_arabic` | `Option<String>` | Arabic occupation description. |
@@ -88,27 +88,30 @@ Look up the fields in a read result, the status of each group, and the options u
 
 ## ReadStatus
 
-| Field | Rust type | Meaning |
+| Field or accessor | Rust type | Meaning |
 | --- | --- | --- |
 | `identity` | `DataGroupStatus` | Required identifiers file. |
 | `photo` | `DataGroupStatus` | Optional photograph file. |
 | `non_modifiable` | `DataGroupStatus` | Required core identity file. |
 | `modifiable` | `DataGroupStatus` | Optional occupation/residency/passport/education file. |
-| `holder_signature_image` | `DataGroupStatus` | Optional V2 signature-image file. |
+| `holder_signature_image` | `DataGroupStatus` | Optional signature-image file. |
 
 ## ReadOptions
 
-| Field | Rust type | Meaning |
+| Field or accessor | Rust type | Meaning |
 | --- | --- | --- |
 | `photo` | `bool` | Read the photograph elementary file. |
 | `modifiable_data` | `bool` | Read occupation, residency, passport, and education data. |
-| `holder_signature_image` | `bool` | Read the V2 holder-signature image file. |
+| `holder_signature_image` | `bool` | Read the holder-signature image file when available. |
 
-## Fields not read by this SDK
+<a id="fields-not-read-by-this-sdk"></a>
 
-Not read by this SDK; access restrictions apply.
 
-Address and contact fields excluded from this SDK's reads and data model. The imported implementation encountered access refusal (status 6982) for these files. This SDK provides no authentication or secure-messaging support.
+## Fields not read by this library
+
+Not read by this library; access restrictions apply.
+
+Address and contact fields excluded from this library's reads and data model. The earlier implementation encountered access refusal (status 6982) for these files. This library provides no authentication or secure-messaging support.
 
 - home address details
 - work address details

@@ -23,11 +23,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?;
 
     let id = card.formatted_id_number();
-    let name = card.get_formatted_name();
-    let arabic_name = card.get_formatted_name_in(Language::Arabic);
-    let photo = card.get_photo();
+    let name = card.formatted_name();
+    let arabic_name = card.formatted_name_in(Language::Arabic);
+    let photo = card.photo();
     // Pass these values to your application's UI.
-    // The example deliberately does not print identity values.
     let _ = (id, name, arabic_name, photo);
     Ok(())
 }
@@ -45,16 +44,16 @@ strings. The snapshot remains usable after the session is dropped.
 | API used | Guide |
 | --- | --- |
 | `connect_first()`, `read_with_options()` | [Readers, sessions, and reading options](Readers-And-Sessions) |
-| `get_formatted_name()`, `get_formatted_name_in()` | [Names](Names) |
+| `formatted_name()`, `formatted_name_in()` | [Names](Names) |
 | `formatted_id_number()` | [Codes and identifiers](Codes-And-Identifiers) |
-| `get_photo()` | [Photos and signatures](Photos-And-Signatures) |
+| `photo()` | [Photos and signatures](Photos-And-Signatures) |
 
 `ReadOptions::identity_only()` keeps the read fast by skipping the expensive
-optional groups; `.with_photo(true)` adds one back. Use `session.read()` when
-you want every public group supported by this SDK.
+optional groups; `.with_photo(true)` adds one back. Use `session.read_all()` when
+you want every public group supported by this library.
 
 Optional values return `None` when they are absent. That is not the same as a
-group being unreadable, so inspect `card.read_status` when the difference
+group being unreadable, so inspect `card.read_status()` when the difference
 matters; see [errors and read statuses](Error-Handling).
 
 ## Try the examples
@@ -75,7 +74,7 @@ personal values, use `read --show-personal-data`.
 
 ## Next
 
-- [Data model and formatting](Data-Model): what the SDK decodes, and what it
+- [Data model and formatting](Data-Model): what the library decodes, and what it
   leaves to you
 - [Application integration](Application-Integration): UI workers, card removal, ownership
 - [Troubleshooting](Troubleshooting): setup and common failures

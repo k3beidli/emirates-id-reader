@@ -2,7 +2,7 @@
 
 # Architecture and chip communication
 
-The SDK separates the public lifecycle from platform resources and card
+The library separates the public lifecycle from platform resources and card
 decoding. Its core read flow can be exercised with a synthetic command
 transport, without a connected reader.
 
@@ -19,13 +19,13 @@ Application
 `lib.rs` exports the consumer API. Internal modules are private so applications
 do not depend on raw handles, APDU details, or implementation-specific file
 layouts. `error.rs` defines shared structured errors. No app-specific state,
-Tauri commands, HTTP endpoints, or persistence is part of the SDK.
+Tauri commands, HTTP endpoints, or persistence is part of the library.
 
 ## Protocol terms
 
 - **PC/SC** is the operating-system interface used to communicate with readers.
 - **ATR** (Answer to Reset) is the byte sequence captured when connecting to a
-  card. This SDK compares it with documented values to classify the chip family.
+  card. This library compares it with documented values to classify the chip family.
 - **AID** (Application Identifier) selects the Emirates ID application on the chip.
 - **APDU** is a command or response exchanged with that application. The response
   ends with a two-byte status word.
@@ -35,7 +35,8 @@ Tauri commands, HTTP endpoints, or persistence is part of the SDK.
 ## Resource ownership
 
 The `pcsc` binding owns native resources and keeps the parent context alive
-for its card. Our handle wrapper disconnects with `LeaveCard`. A transaction guard ends the transaction
+for its card. Our handle wrapper disconnects with `LeaveCard`; `close()` reports failures while
+`Drop` uses best-effort cleanup. A transaction guard ends the transaction
 on normal return, error return, or unwinding. The connection mutex covers the
 whole read and presence checks because native transactions alone do not prevent same-handle
 callers from interleaving commands. A poisoned mutex returns an error asking
@@ -71,13 +72,16 @@ files as a fallback.
 
 ## Tests and extension points
 
-`tests.rs` covers inherited parser/APDU cases. `sdk_tests.rs` emulates a card's
+`tests.rs` covers parser/APDU cases. `library_tests.rs` emulates a card's
 SELECT and READ BINARY behavior to test options, statuses, image chunking,
 fallback, and malformed data. These tests do not establish hardware support.
 
 The private protocol reader accepts a command callback, isolating it from
 the native transport. The `pcsc` crate handles WinSCard on Windows, pcsc-lite
 on Linux, and the system PCSC framework on macOS. Platform-specific ABI and
-resource ownership are kept out of the SDK protocol code. A public raw-transport
+resource ownership are kept out of the library protocol code. A public raw-transport
 API is not included. A successful read also requires successful transaction
 cleanup; cleanup failures are returned to the caller.
+
+`tests/public_api.rs` checks consumer-facing construction, redaction, optional
+serialization, and thread-safety traits without hardware.

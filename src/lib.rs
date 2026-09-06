@@ -1,7 +1,11 @@
 //! A Rust library for reading data from Emirates ID chips.
 //!
 //! The crate talks to contact cards through native PC/SC on Windows, Linux, and macOS. Cardholder data is
-//! returned in memory and is never persisted by the SDK.
+//! returned in memory and is never persisted by the library.
+//!
+//! `serde` is optional: enable it for `Serialize` implementations. Normal builds
+//! require only PC/SC; the desktop app opts into serialization for its IPC bridge.
+//! Snapshots and nested records redact personal data in `Debug` output.
 //!
 //! # Quick start
 //!
@@ -11,16 +15,16 @@
 //! # fn main() -> Result<(), emirates_id_reader::Error> {
 //! let session = CardSession::connect_first()?;
 //! let card = session.read_with_options(ReadOptions::identity_only())?;
-//! let name = card.get_formatted_name();
+//! let name = card.formatted_name();
 //! let id = card.formatted_id_number();
 //! // Bind the values to your UI without logging personal data. The stored
-//! // values stay available through `get_name()` and `get_id_number()`.
+//! // values stay available through `name()` and `id_number()`.
 //! # Ok(())
 //! # }
 //! ```
 //!
-//! Use [`CardSession::read`] when photographs and all other supported public
-//! groups are required. Inspect [`EmiratesIdData::read_status`] to distinguish
+//! Use [`CardSession::read_all`] when photographs and all other supported public
+//! groups are required, or [`CardSession::read_identity`] for core fields only. Inspect [`EmiratesIdData::read_status`] to distinguish
 //! a blank field from an optional group that was protected, unavailable, or
 //! deliberately skipped.
 
@@ -42,7 +46,7 @@ pub use session::CardSession;
 mod tests;
 
 #[cfg(test)]
-mod sdk_tests;
+mod library_tests;
 
 // Compile the consumer examples in the shipped guides as Rustdoc tests. Every
 // guide carrying a Rust example belongs here; without it the example is never

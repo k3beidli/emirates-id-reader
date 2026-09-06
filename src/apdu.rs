@@ -13,7 +13,11 @@ where
     for _ in 0..32 {
         let (data, status) = exchange_once(&command)?;
         match status {
-            0x9000 | 0x6282 => {
+            0x9000 => {
+                response_data.extend_from_slice(&data);
+                return Ok(response_data);
+            }
+            0x6282 if request.get(1) == Some(&0xB0) => {
                 // 6282 is the ISO 7816 EOF warning: returned bytes are valid,
                 // but the requested Le extended past the end of the file.
                 response_data.extend_from_slice(&data);

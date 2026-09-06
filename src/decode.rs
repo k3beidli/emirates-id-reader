@@ -142,15 +142,7 @@ pub(crate) fn date(data: &[u8], tag: u16) -> Result<Option<String>, Error> {
     let year: u16 = format!("{}{}", digits[0], digits[1]).parse().unwrap();
     let month: u8 = digits[2].parse().unwrap();
     let day: u8 = digits[3].parse().unwrap();
-    let leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
-    let days = match month {
-        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
-        4 | 6 | 9 | 11 => 30,
-        2 if leap => 29,
-        2 => 28,
-        _ => 0,
-    };
-    if year == 0 || day == 0 || day > days {
+    if !valid_calendar_date(year, month, day) {
         return Err(Error::new(
             ErrorKind::InvalidData,
             format!("Date {tag:04X} is not a calendar date"),
@@ -218,4 +210,33 @@ pub(crate) fn decode_modifiable(data: &[u8]) -> Result<ModifiableData, Error> {
         mother_full_name_arabic: text(data, 0xA510)?,
         mother_full_name_english: text(data, 0xE511)?,
     })
+}
+
+fn valid_calendar_date(year: u16, month: u8, day: u8) -> bool {
+    let leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+    let days = match month {
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        4 | 6 | 9 | 11 => 30,
+        2 if leap => 29,
+        2 => 28,
+        _ => 0,
+    };
+    year > 0 && day > 0 && day <= days
+}
+pub(crate) fn valid_iso_date(value: &str) -> bool {
+    let bytes = value.as_bytes();
+    if bytes.len() != 10
+        || bytes[4] != b'-'
+        || bytes[7] != b'-'
+        || !bytes
+            .iter()
+            .enumerate()
+            .all(|(i, b)| i == 4 || i == 7 || b.is_ascii_digit())
+    {
+        return false;
+    }
+    match (value[..4].parse(), value[5..7].parse(), value[8..].parse()) {
+        (Ok(year), Ok(month), Ok(day)) => valid_calendar_date(year, month, day),
+        _ => false,
+    }
 }

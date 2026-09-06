@@ -1,17 +1,15 @@
-//! Structured SDK errors.
+//! Structured library errors.
+#[cfg(feature = "serde")]
 use serde::Serialize;
 use std::fmt;
-const SCARD_E_NO_SMARTCARD: i32 = 0x8010_000C_u32 as i32;
-const SCARD_E_READER_UNAVAILABLE: i32 = 0x8010_0017_u32 as i32;
-const SCARD_E_NO_READERS_AVAILABLE: i32 = 0x8010_002E_u32 as i32;
-const SCARD_W_RESET_CARD: i32 = 0x8010_0068_u32 as i32;
-const SCARD_W_REMOVED_CARD: i32 = 0x8010_0069_u32 as i32;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
-#[serde(rename_all = "snake_case")]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 /// Stable categories callers can use to decide whether to wait, reconnect, or reject data.
+#[non_exhaustive]
 pub enum ErrorKind {
-    /// An SDK argument is invalid.
+    /// A library argument is invalid.
     InvalidArgument,
     /// native PC/SC reports no installed reader.
     NoReader,
@@ -27,8 +25,10 @@ pub enum ErrorKind {
     InvalidData,
 }
 
-#[derive(Clone, Debug, Serialize)]
-/// Error returned by the SDK.
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize))]
+/// Error returned by the library.
+#[non_exhaustive]
 pub struct Error {
     /// Machine-readable error category.
     pub kind: ErrorKind,
@@ -36,6 +36,8 @@ pub struct Error {
     pub message: String,
     /// ISO 7816 status word when the failure came from the card itself.
     pub status_word: Option<u16>,
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+    pcsc_code: Option<u32>,
 }
 
 impl Error {
@@ -44,6 +46,7 @@ impl Error {
             kind,
             message: message.into(),
             status_word: None,
+            pcsc_code: None,
         }
     }
 
@@ -52,22 +55,30 @@ impl Error {
             kind: ErrorKind::Protocol,
             message: format!("Card APDU failed with status word {status_word:04X}"),
             status_word: Some(status_word),
+            pcsc_code: None,
         }
     }
 
-    pub(crate) fn pcsc(operation: &str, code: i32) -> Self {
-        let kind = match code {
-            SCARD_E_NO_READERS_AVAILABLE => ErrorKind::NoReader,
-            SCARD_E_NO_SMARTCARD => ErrorKind::NoCard,
-            SCARD_W_REMOVED_CARD | SCARD_W_RESET_CARD | SCARD_E_READER_UNAVAILABLE => {
+    /// Returns the original native PC/SC error code, when applicable.
+    pub fn pcsc_code(&self) -> Option<u32> {
+        self.pcsc_code
+    }
+
+    pub(crate) fn pcsc(operation: &str, error: pcsc::Error) -> Self {
+        let kind = match error {
+            pcsc::Error::NoReadersAvailable => ErrorKind::NoReader,
+            pcsc::Error::NoSmartcard => ErrorKind::NoCard,
+            pcsc::Error::RemovedCard | pcsc::Error::ResetCard | pcsc::Error::ReaderUnavailable => {
                 ErrorKind::CardRemoved
             }
             _ => ErrorKind::Pcsc,
         };
-        Self::new(
+        Self {
             kind,
-            format!("{operation} failed with PC/SC error 0x{:08X}", code as u32),
-        )
+            message: format!("{operation} failed with PC/SC error 0x{:08X}", error as u32),
+            status_word: None,
+            pcsc_code: Some(error as u32),
+        }
     }
 }
 

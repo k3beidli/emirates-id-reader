@@ -1,3 +1,5 @@
+// Synthetic library regression fixtures, compiled only under cfg(test).
+// Numeric identifiers below exercise formatting and validation; they are not read defaults.
 use crate::{CardGeneration, DataGroupStatus, Error, ErrorKind, Gender, Language, ReadOptions};
 use std::collections::BTreeMap;
 
@@ -116,28 +118,28 @@ fn full_read_and_borrowed_accessors_work_for_all_generation_classifications() {
             .unwrap();
         assert_eq!(data.card_generation, generation);
         // The raw accessors keep returning the stored value, separators included.
-        assert_eq!(data.get_name(), Some("SYNTHETIC,TEST,,HOLDER"));
-        assert_eq!(data.get_name_in(Language::Arabic), Some("اسم,تجريبي"));
-        assert_eq!(data.get_gender(), Some("M"));
+        assert_eq!(data.name(), Some("SYNTHETIC,TEST,,HOLDER"));
+        assert_eq!(data.name_in(Language::Arabic), Some("اسم,تجريبي"));
+        assert_eq!(data.gender_code(), Some("M"));
         assert_eq!(
             data.identity().full_name_english.as_deref(),
             Some("SYNTHETIC,TEST,,HOLDER")
         );
         assert_eq!(
-            data.get_formatted_name().as_deref(),
+            data.formatted_name().as_deref(),
             Some("SYNTHETIC TEST HOLDER")
         );
         assert_eq!(data.gender(), Some(Gender::Male));
-        assert_eq!(data.get_photo(), Some(&[0xFF, 0xD8, 0xFF, 0xD9][..]));
-        assert_eq!(data.get_signature(), Some(&[1, 2, 3][..]));
-        assert_eq!(data.get_id_number(), "000000000000000");
+        assert_eq!(data.photo(), Some(&[0xFF, 0xD8, 0xFF, 0xD9][..]));
+        assert_eq!(data.signature(), Some(&[1, 2, 3][..]));
+        assert_eq!(data.id_number(), "000000000000000");
         assert_eq!(
             data.extended().passport_number.as_deref(),
             Some("SYNTHETIC")
         );
         assert_eq!(data.read_status.photo, DataGroupStatus::Read);
         assert_eq!(
-            data.get_photo().unwrap().as_ptr(),
+            data.photo().unwrap().as_ptr(),
             data.photo_jpeg.as_ref().unwrap().as_ptr()
         );
     }
@@ -151,10 +153,10 @@ fn name_fallback_does_not_affect_language_specific_lookup() {
     let data = card
         .read(ReadOptions::identity_only(), CardGeneration::V1)
         .unwrap();
-    assert_eq!(data.get_name(), Some("اسم,تجريبي"));
-    assert_eq!(data.get_name_in(Language::English), None);
-    assert_eq!(data.get_formatted_name().as_deref(), Some("اسم تجريبي"));
-    assert_eq!(data.get_formatted_name_in(Language::English), None);
+    assert_eq!(data.name(), Some("اسم,تجريبي"));
+    assert_eq!(data.name_in(Language::English), None);
+    assert_eq!(data.formatted_name().as_deref(), Some("اسم تجريبي"));
+    assert_eq!(data.formatted_name_in(Language::English), None);
     assert_eq!(data.name_components_in(Language::English).count(), 0);
 }
 
@@ -174,11 +176,11 @@ fn name_components_preserve_empty_positions_that_formatting_drops() {
         ["اسم", "تجريبي"]
     );
     assert_eq!(
-        data.get_formatted_name_in(Language::English).as_deref(),
+        data.formatted_name_in(Language::English).as_deref(),
         Some("SYNTHETIC TEST HOLDER")
     );
     assert_eq!(
-        data.get_formatted_name_in(Language::Arabic).as_deref(),
+        data.formatted_name_in(Language::Arabic).as_deref(),
         Some("اسم تجريبي")
     );
 }
@@ -197,15 +199,15 @@ fn separator_only_names_keep_positions_but_have_no_formatted_value() {
         .read(ReadOptions::identity_only(), CardGeneration::V1)
         .unwrap();
     // The decoder trims the stored value; the separators it keeps are the structure.
-    assert_eq!(data.get_name_in(Language::English), Some(", ,,"));
+    assert_eq!(data.name_in(Language::English), Some(", ,,"));
     assert_eq!(
         data.name_components_in(Language::English)
             .collect::<Vec<_>>(),
         ["", "", "", ""]
     );
-    assert_eq!(data.get_formatted_name_in(Language::English), None);
+    assert_eq!(data.formatted_name_in(Language::English), None);
     // The wider fallback: no usable English value, so Arabic is formatted instead.
-    assert_eq!(data.get_formatted_name().as_deref(), Some("اسم تجريبي"));
+    assert_eq!(data.formatted_name().as_deref(), Some("اسم تجريبي"));
 }
 
 #[test]
@@ -221,10 +223,7 @@ fn names_without_separators_yield_a_single_component() {
             .collect::<Vec<_>>(),
         ["SYNTHETIC HOLDER"]
     );
-    assert_eq!(
-        data.get_formatted_name().as_deref(),
-        Some("SYNTHETIC HOLDER")
-    );
+    assert_eq!(data.formatted_name().as_deref(), Some("SYNTHETIC HOLDER"));
 }
 
 #[test]
@@ -252,7 +251,7 @@ fn gender_codes_are_interpreted_without_discarding_unknown_values() {
     let data = card
         .read(ReadOptions::identity_only(), CardGeneration::V1)
         .unwrap();
-    assert_eq!(data.get_gender(), Some("X"));
+    assert_eq!(data.gender_code(), Some("X"));
     assert_eq!(data.gender(), Some(Gender::Unrecognized(String::from("X"))));
 
     let mut card = FakeCard::new();
@@ -261,7 +260,7 @@ fn gender_codes_are_interpreted_without_discarding_unknown_values() {
     let data = card
         .read(ReadOptions::identity_only(), CardGeneration::V1)
         .unwrap();
-    assert_eq!(data.get_gender(), None);
+    assert_eq!(data.gender_code(), None);
     assert_eq!(data.gender(), None);
 }
 
@@ -270,7 +269,7 @@ fn id_number_formatting_groups_valid_digits_and_passes_other_values_through() {
     let mut data = FakeCard::new()
         .read(ReadOptions::identity_only(), CardGeneration::V1)
         .unwrap();
-    assert_eq!(data.get_id_number(), "000000000000000");
+    assert_eq!(data.id_number(), "000000000000000");
     assert_eq!(data.formatted_id_number(), "000-0000-0000000-0");
     data.id_number = String::from("784198512345671");
     assert_eq!(data.formatted_id_number(), "784-1985-1234567-1");
@@ -290,7 +289,7 @@ fn read_options_select_only_requested_files() {
         .read(ReadOptions::identity_only(), CardGeneration::V1)
         .unwrap();
     assert_eq!(fake.selections, [0x0200, 0x0201, 0x0203]);
-    assert_eq!(data.get_photo(), None);
+    assert_eq!(data.photo(), None);
     assert_eq!(data.read_status.photo, DataGroupStatus::NotRequested);
     assert_eq!(data.read_status.modifiable, DataGroupStatus::NotRequested);
     assert_eq!(
@@ -398,7 +397,7 @@ fn malformed_images_fail_but_empty_fields_are_absent() {
     let mut fake = FakeCard::new();
     fake.files.insert(0x0202, Ok(container(&[(0x6203, &[])])));
     let data = fake.read(ReadOptions::all(), CardGeneration::V2).unwrap();
-    assert_eq!(data.get_photo(), None);
+    assert_eq!(data.photo(), None);
     assert_eq!(data.read_status.photo, DataGroupStatus::Read);
     fake.files.insert(0x0207, Ok(vec![0x70, 7, 0, 4, 0x67]));
     assert!(fake.read(ReadOptions::all(), CardGeneration::V2).is_err());
@@ -414,7 +413,7 @@ fn multi_chunk_photos_empty_chunks_and_oversized_files() {
     assert_eq!(
         fake.read(ReadOptions::all(), CardGeneration::V2)
             .unwrap()
-            .get_photo(),
+            .photo(),
         Some(photo.as_slice())
     );
     fake.empty_after_first_chunk = true;
@@ -514,13 +513,35 @@ fn invalid_reader_names_are_rejected_before_touching_pcsc() {
 #[test]
 fn pcsc_errors_keep_machine_readable_kinds() {
     for (code, expected) in [
-        (0x8010002Eu32, ErrorKind::NoReader),
-        (0x8010000C, ErrorKind::NoCard),
-        (0x80100068, ErrorKind::CardRemoved),
-        (0x80100069, ErrorKind::CardRemoved),
-        (0x80100017, ErrorKind::CardRemoved),
-        (0x8010000B, ErrorKind::Pcsc),
+        (pcsc::Error::NoReadersAvailable, ErrorKind::NoReader),
+        (pcsc::Error::NoSmartcard, ErrorKind::NoCard),
+        (pcsc::Error::ResetCard, ErrorKind::CardRemoved),
+        (pcsc::Error::RemovedCard, ErrorKind::CardRemoved),
+        (pcsc::Error::ReaderUnavailable, ErrorKind::CardRemoved),
+        (pcsc::Error::SharingViolation, ErrorKind::Pcsc),
     ] {
-        assert_eq!(Error::pcsc("Synthetic", code as i32).kind, expected);
+        assert_eq!(Error::pcsc("Synthetic", code).kind, expected);
+    }
+}
+
+#[test]
+fn native_error_codes_are_structured_without_card_status_words() {
+    let error = Error::pcsc("Synthetic", pcsc::Error::SharingViolation);
+    assert_eq!(
+        error.pcsc_code(),
+        Some(pcsc::Error::SharingViolation as u32)
+    );
+    assert_eq!(error.status_word, None);
+    assert_eq!(Error::apdu(0x6982).pcsc_code(), None);
+    #[cfg(feature = "serde")]
+    {
+        let value = serde_json::to_value(&error).unwrap();
+        assert_eq!(value["pcsc_code"], pcsc::Error::SharingViolation as u32);
+        assert!(
+            serde_json::to_value(Error::apdu(0x6982))
+                .unwrap()
+                .get("pcsc_code")
+                .is_none()
+        );
     }
 }

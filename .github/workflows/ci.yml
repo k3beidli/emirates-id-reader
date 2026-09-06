@@ -22,6 +22,8 @@ jobs:
         run: cargo +stable fmt --all -- --check
       - name: Lints
         run: cargo +stable clippy --locked --all-targets --all-features -- -D warnings
+      - name: Default-feature tests
+        run: cargo +stable test --locked --no-default-features
       - name: Tests
         run: cargo +stable test --locked --all-features
       - name: Documentation
