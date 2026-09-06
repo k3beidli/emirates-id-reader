@@ -1,19 +1,19 @@
 [package]
 name = "emirates-id-reader"
-version = "0.4.0"
+version = "0.1.0"
 edition = "2024"
 rust-version = "1.85"
 description = "A Rust library for reading data from Emirates ID chips."
 license = "MIT"
 repository = "https://github.com/k3beidli/emirates-id-reader"
 readme = "README.md"
-documentation = "https://docs.rs/emirates-id-reader"
+documentation = "https://github.com/k3beidli/emirates-id-reader/wiki"
 keywords = ["emirates-id", "smartcard", "pcsc", "uae", "iso7816"]
 categories = ["api-bindings", "hardware-support"]
 # Anchor patterns at this package root so nested app READMEs/licenses do not match.
 # The negated paths keep companion-app guides out of the SDK archive if those
 # pages are added under docs/ or generated into docs/wiki/ in the future.
-include = ["/src/**", "/docs/**/*.md", "/docs/media/*.gif", "/examples/**", "/scripts/build_wiki.py", "/CONTRIBUTING.md", "/Cargo.toml", "/README.md", "/CHANGELOG.md", "/LICENSE", "!/docs/sample-app.md", "!/docs/wiki/Sample-App.md"]
+include = ["/src/**", "/docs/**/*.md", "/docs/media/*.webp", "/examples/**", "/scripts/build_wiki.py", "/CONTRIBUTING.md", "/Cargo.toml", "/README.md", "/CHANGELOG.md", "/LICENSE", "!/docs/sample-app.md", "!/docs/wiki/Sample-App.md"]
 
 [features]
 default = []

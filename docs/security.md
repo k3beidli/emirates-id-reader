@@ -35,7 +35,9 @@ The exported `PROTECTED_AND_SKIPPED_FIELDS` constant lists these fields. They
 have no getter, snapshot field, or per-group status. See the generated
 [field reference](field-reference.md#fields-not-read-by-this-sdk).
 
-Fingerprint templates and family-book records are also not read. Some supported
+Fingerprint scanning (capturing a fingerprint from a sensor) and reading
+fingerprint templates from the chip have not been implemented. Family-book
+records are also not read. Some supported
 public groups, including photographs, can themselves be protected on an
 individual card. Those attempted reads receive a group status as described in
 [errors and read statuses](error-handling.md).

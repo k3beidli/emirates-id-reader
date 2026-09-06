@@ -76,7 +76,7 @@ Supporting material on toolkit behavior, cited alongside the V1 field list in
 ## Acknowledgments
 
 The reader began as application-specific code extracted into a standalone
-project at commit `14e415a`, and the SDK refactor starts at version 0.3.0. The
+project at commit `14e415a`, and the SDK baseline is version 0.1.0. The
 hardware results recorded in [testing](Testing) were supplied with that
 import; they describe the earlier implementation and are labelled as such.
 

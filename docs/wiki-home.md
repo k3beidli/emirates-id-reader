@@ -26,10 +26,15 @@ The sidebar lists every page, grouped by purpose.
 
 ## Scope and status
 
-Version 0.4.0 remains experimental. The native backend supports Windows, Linux,
-and macOS contact PC/SC. Historical hardware results came with the imported
-project; the refactor needs fresh validation. Unknown ATRs are probed, but
-future generations are not guaranteed to work.
+Version 0.1.0 remains experimental. Hardware testing is limited to the
+**HID OMNIKEY 3121 on Windows**. Linux and macOS are expected to work through
+native PC/SC but have not been hardware-tested. No other reader models have
+been tested. See [testing and hardware validation](testing.md) for the historical
+results and the remaining checks for the current SDK.
+
+**Fingerprint scanning has not been implemented yet.** Reading fingerprint
+templates from the chip is also not implemented. Unknown ATRs are probed, but
+future card generations are not guaranteed to work.
 
 This SDK is independent and unofficial. It does not authenticate the card, read
 fingerprints, or bypass protected files, and it contains no proprietary ICP

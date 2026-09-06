@@ -218,6 +218,12 @@ def main():
     args = parser.parse_args()
     fields = field_reference()
     navigation = sidebar()
+    manifest = (ROOT / "Cargo.toml").read_text(encoding="utf-8")
+    package = manifest.split("[package]", 1)[1].split("\n[", 1)[0]
+    version_match = re.search(r'^version\s*=\s*"([^"]+)"', package, re.M)
+    if version_match is None:
+        raise ValueError("Package version not found in Cargo.toml")
+    version = version_match[1]
     outputs = {ROOT / "docs/field-reference.md": fields}
     for name, path in PAGES.items():
         source = ROOT / path
@@ -227,7 +233,8 @@ def main():
     outputs[ROOT / "docs/wiki/_Footer.md"] = (
         "[Source repository](https://github.com/k3beidli/emirates-id-reader) | "
         "[Getting started](Getting-Started) | [Security](Security)\n\n"
-        "Unofficial Rust SDK. Windows, Linux, and macOS contact PC/SC. "
+        f"Emirates ID Reader SDK v{version}. Unofficial. "
+        "Windows, Linux, and macOS contact PC/SC. "
         "Generated from the repository documentation; edit the source guides.\n"
     )
     stale = []

@@ -121,13 +121,13 @@ security policy or guarantee that a holder has a non-empty value.
 | mother's Arabic/English name | First name | Full name | Exposed through the same SDK fields |
 | `holder_signature_image` | No | Yes | Optional V2 file |
 | address, phone and email | No | Stored | Protected on the tested V2 card; intentionally not read |
-| fingerprints | Stored, protected | Stored, protected | Never accessed by this public-data SDK |
+| fingerprints | Stored, protected | Stored, protected | Fingerprint reading not implemented |
 | family-book data | No | Stored separately | Not part of anonymous public-data reading |
 
 ## Historical validation supplied with the import
 
-The imported 0.2 project reported successful V1 and V2 reads with an HID
-OMNIKEY 3x21 on Windows, including extended fields on the tested V1 card.
+The imported implementation reported successful V1 and V2 reads with an HID
+OMNIKEY 3121 on Windows, including extended fields on the tested V1 card.
 Those results do not establish hardware support for the current SDK revision.
 See [testing and hardware validation](Testing) for the evidence table and
 the checklist for new validation.

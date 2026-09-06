@@ -1,7 +1,7 @@
 # Migrating from the extracted project
 
 The untouched standalone import is commit `14e415a`. The SDK refactor starts
-with package version 0.3.0. Existing `CardSession` methods and public data
+with package version 0.1.0. Existing `CardSession` methods and public data
 fields remain available.
 
 ## Simpler data access

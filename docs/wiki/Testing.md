@@ -2,6 +2,22 @@
 
 # Testing and hardware validation
 
+## Tested hardware and platforms
+
+Hardware testing has been limited to the **HID OMNIKEY 3121 on Windows**.
+No other reader models have been tested.
+
+Linux and macOS are expected to work through their native PC/SC backends, but
+**no hardware testing has been performed on either platform**. Automated native
+builds and synthetic tests are separate from physical reader validation.
+
+The historical per-generation results are recorded below. They do not establish
+that every flow in the current SDK revision has been hardware-validated.
+Fingerprint scanning and reading fingerprint templates from the chip have not
+been implemented, so neither is covered by these results.
+
+## Running diagnostics
+
 No personal values should be copied into issues, fixtures, screenshots, or
 test logs. Use the CLI's redacted mode, which reports only generation, field
 presence, character counts, image byte counts and group status.
@@ -30,18 +46,18 @@ Run the following on at least one card from each chip generation:
 ## Refactor validation
 
 The current SDK has synthetic protocol and API tests. The historical results below
-were supplied with the imported 0.2 project; they are not new hardware results
+were supplied with the imported implementation; they are not new hardware results
 for the refactored implementation. Repeat this checklist on V1 and V2 before
 marking the new release hardware validated.
 
 <a id="evidence-table"></a>
 
-## Historical evidence (imported 0.2 implementation)
+## Historical evidence (imported implementation)
 
 | Generation | Reader | Core identity | Extended data | Photo | Signature image | Removal/reinsert | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| V1 | HID OMNIKEY 3x21 | Pass | Pass on tested card | Pass on tested card | Pass on tested card | Pending | Reported pass; V1 lifecycle pending |
-| V2 | HID OMNIKEY 3x21 | Pass | Pass | Pass | Pass | Pass | Reported pass |
+| V1 | HID OMNIKEY 3121 | Pass | Pass on tested card | Pass on tested card | Pass on tested card | Pending | Reported pass; V1 lifecycle pending |
+| V2 | HID OMNIKEY 3121 | Pass | Pass | Pass | Pass | Pass | Reported pass |
 
 The table records compatibility, not card authenticity. Offline genuineness or
 digital-signature verification requires a separate trust policy and current

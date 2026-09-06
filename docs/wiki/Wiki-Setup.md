@@ -8,6 +8,9 @@ Rustdoc comments in `src/data.rs`, and writes the navigation. CI fails if any
 generated file is stale, so generate and commit in the same change.
 
 Never edit anything in `docs/wiki/` or `docs/field-reference.md` directly.
+The Wiki footer takes the SDK version from `Cargo.toml`; regenerate it whenever
+the package version changes, and update the README, Home, installation guide,
+and changelog in the same change.
 
 <a id="regenerate-the-pages"></a>
 

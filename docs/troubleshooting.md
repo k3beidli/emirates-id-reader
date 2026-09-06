@@ -20,7 +20,7 @@ default; keep personal values out of logs and issues.
 | Protected photo or extended data | SDK cannot authenticate protected files; handle missing data |
 | Getter returns old data after reinsertion | Discard old snapshot/session and reconnect |
 | UI freezes during reading | Move blocking PC/SC work off the UI thread |
-| `InvalidData` after upgrading | 0.3 rejects corruption previously ignored; see migration guide |
+| `InvalidData` after upgrading | The SDK rejects corruption the extracted code previously ignored; see migration guide |
 
 Report the SDK revision, Rust version, operating system/version, reader model, generation,
 error kind/status word, and reproduction steps. Do not submit photographs,

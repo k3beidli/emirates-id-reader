@@ -2,10 +2,19 @@
 
 # Installation and platforms
 
-The SDK uses native PC/SC on Windows, Linux, and macOS through the
-[pcsc bindings](https://github.com/bluetech/pcsc-rust). The same `CardSession`
-and accessors work on each. Browser and WebUSB readers, mobile platforms,
-contactless NFC, and bindings for other languages are out of scope.
+The SDK uses native PC/SC through the
+[pcsc bindings](https://github.com/bluetech/pcsc-rust), with one Rust API for
+Windows, Linux, and macOS.
+
+**Hardware testing is limited to the HID OMNIKEY 3121 on Windows.** Linux and
+macOS are expected to work through their native PC/SC backends, but neither has
+been hardware-tested. No other reader models have been tested. CI builds and
+synthetic tests do not verify communication with a physical reader.
+
+The setup instructions below cover the intended platforms. See
+[testing and hardware validation](Testing) for the evidence and remaining
+checks. Browser/WebUSB readers, mobile platforms, contactless NFC, and bindings
+for other languages are not implemented.
 
 ## Requirements
 
@@ -37,7 +46,7 @@ emirates-id-reader = { path = "../emirates-id-reader" }
 ```
 
 Commit your application's `Cargo.lock` to retain the resolved Git revision. For
-a release you can also pin `rev = "<full reviewed commit SHA>"`. Version 0.4.0
+a release you can also pin `rev = "<full reviewed commit SHA>"`. Version 0.1.0
 is the package version in this repository; these instructions assume neither a
 crates.io publication nor a Git release tag.
 
