@@ -269,8 +269,9 @@ pub struct EmiratesIdData {
     pub read_status: ReadStatus,
 }
 
-/// These values are documented as public, but their card files reject a plain
-/// unauthenticated read with status 6982, so this clean SDK deliberately skips them.
+/// Address and contact fields excluded from this SDK's reads and data model.
+/// The imported implementation encountered access refusal (status 6982) for
+/// these files. This SDK provides no authentication or secure-messaging support.
 pub const PROTECTED_AND_SKIPPED_FIELDS: &[&str] = &[
     "home address details",
     "work address details",

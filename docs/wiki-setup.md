@@ -1,43 +1,83 @@
-# GitHub Wiki setup
+<a id="github-wiki-setup"></a>
 
-The repository contains Wiki-ready Markdown in `docs/wiki/`. These files are
-prepared for publication; pushing the main source repository does not publish
-them to the Wiki automatically.
+# Documentation maintenance
 
-GitHub stores a Wiki in a separate Git repository, with a `.wiki.git` suffix.
-Create an initial page through GitHub before cloning it. Only the Wiki's
-default branch is displayed. See [GitHub's Wiki editing documentation](https://docs.github.com/en/communities/documenting-your-project-with-wikis/adding-or-editing-wiki-pages).
+The canonical guides live in `docs/`. `scripts/build_wiki.py` turns them into
+the Wiki-ready pages in `docs/wiki/`, derives the field reference from the
+Rustdoc comments in `src/data.rs`, and writes the navigation. CI fails if any
+generated file is stale, so generate and commit in the same change.
 
-## Regenerate the pages
+Never edit anything in `docs/wiki/` or `docs/field-reference.md` directly.
 
-From this source checkout, with Python 3.10 or newer:
+<a id="regenerate-the-pages"></a>
+
+## Regenerate
+
+With Python 3.10 or newer:
 
 ```powershell
 python scripts/build_wiki.py
 python scripts/build_wiki.py --check
 ```
 
-The generator converts guide links to Wiki page links, derives the complete
-field reference from Rustdoc comments, and creates `Home.md`, `_Sidebar.md`,
-and `_Footer.md`. GitHub recognizes the last two filenames as custom
-navigation. See [GitHub's sidebar/footer documentation](https://docs.github.com/en/communities/documenting-your-project-with-wikis/creating-a-footer-or-sidebar-for-your-wiki).
+## Adding or renaming a page
 
-Commit the generated files alongside their source guides. CI checks for
-staleness. Edit `docs/*.md`, `CONTRIBUTING.md`, or the public field comments in
-`src/data.rs`; do not edit generated pages directly.
+A page name is its published URL, so **keep the page name stable** even when the
+title or the sidebar label changes; that is what `LABELS` is for. To add a page:
 
-## Initialize the Wiki once
+1. Write the guide in `docs/`.
+2. Add a `PAGES` entry mapping the wiki page name to the source path.
+3. Add a `LABELS` entry if the sidebar text differs from the page name, and
+   place the page in a `SIDEBAR` group. The generator refuses to run if a page
+   is missing from the navigation, listed twice, or unknown.
+4. If the guide contains a Rust example, add it to the `guide_examples` block in
+   `src/lib.rs`. Examples are only compiled if they are listed there.
+5. Update links to any moved sections and retain useful old section anchors.
+6. Regenerate and run `cargo test --locked --all-features`. Review the generated
+   pages and sidebar, then run `python scripts/build_wiki.py --check`.
 
-1. Open the repository on GitHub and enable Wikis in repository settings if
-   the Wiki tab is missing and your repository plan supports it.
-2. Open the Wiki tab and create/save the first Home page.
-3. Clone the Wiki beside your source checkout using the commands below.
+Every fenced block needs a language tag. Rustdoc treats an untagged fence as
+Rust and will try to compile it, so a bare fence holding shell commands breaks
+the build. Card examples use `rust,no_run`; examples that only format values can
+execute against synthetic data.
 
-## Copy and publish
+Removing a page also means deleting its generated `docs/wiki/*.md`, since the
+generator reports leftover pages, and repointing every inbound link. A link to a
+source file that is no longer a page silently becomes a link to GitHub's blob
+view rather than a wiki page.
 
-Run from the root of the source checkout. Choose a new sibling directory for
-the first clone; if you already have a Wiki clone, use its path instead and
-first ensure it is clean and updated with `git pull --ff-only`.
+## Writing a guide
+
+Start with the task the reader wants to complete, followed by a short example.
+Explain return types, missing values, and important edge cases. Put protocol
+background after the practical guidance, and link to shared conventions rather
+than repeating them on every page.
+
+Keep examples synthetic and avoid printing names, identifiers, or image bytes.
+Cite official references beside the claims they support and record the document
+in [sources and acknowledgments](sources.md). Distinguish specification claims,
+SDK behavior, and historical hardware observations.
+
+<a id="copy-and-publish"></a>
+<a id="initialize-the-wiki-once"></a>
+
+## Publish
+
+GitHub stores a Wiki in a separate repository with a `.wiki.git` suffix, and
+only its default branch is displayed. Create the first page through the GitHub
+UI before cloning. See
+[GitHub's Wiki documentation](https://docs.github.com/en/communities/documenting-your-project-with-wikis/adding-or-editing-wiki-pages)
+and its
+[sidebar and footer documentation](https://docs.github.com/en/communities/documenting-your-project-with-wikis/creating-a-footer-or-sidebar-for-your-wiki);
+`_Sidebar.md` and `_Footer.md` are recognised by those filenames.
+
+1. Enable Wikis in repository settings if the Wiki tab is missing.
+2. Open the Wiki tab and save the first Home page.
+3. Clone the Wiki beside your source checkout and copy the generated pages.
+
+Run from the root of the source checkout. Choose a new sibling directory for the
+first clone; with an existing clone, use its path and make sure it is clean and
+up to date with `git pull --ff-only` first.
 
 ```powershell
 git clone https://github.com/k3beidli/emirates-id-reader.wiki.git ../emirates-id-reader.wiki
@@ -52,12 +92,10 @@ git -C $wikiPath commit -m 'Document the Emirates ID Reader SDK'
 git -C $wikiPath push
 ```
 
-Review the displayed remote and diff before committing/pushing. Use the
-default branch checked out by `git clone`; do not assume it is named `main`
-or `master`. The copy replaces matching page filenames and preserves unrelated
-pages. If a source page was renamed/removed, review and remove the old Wiki
-page separately so it does not remain published.
+Review the displayed remote and diff before committing and pushing. Use the
+branch `git clone` checks out; do not assume it is named `main` or `master`. The
+copy replaces matching filenames and leaves unrelated pages alone, so a page
+removed here must be removed on the Wiki separately.
 
-These commands use your existing Git authentication. No token needs to be
-stored in this project. No Wiki sync workflow or automatic publication is
-enabled by this setup.
+These commands use your existing Git authentication. No token is stored in this
+project, and no workflow publishes the Wiki automatically.

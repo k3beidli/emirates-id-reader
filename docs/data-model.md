@@ -1,86 +1,111 @@
-# SDK data model
+<a id="sdk-data-model"></a>
 
-See the [complete field reference](field-reference.md) for every public field,
-Rust type, and description.
+# Data model and formatting
 
-`EmiratesIdData` is generation-neutral. A V1 caller and a V2 caller use the
-same Rust types; fields that do not exist on a generation or are blank on a
-particular card remain `None`.
+A successful read returns an `EmiratesIdData` snapshot containing decoded card
+values and a read status for each group. V1 and V2 use the same Rust types.
+Optional fields use `Option`: a value is `Some(value)` when available and `None`
+otherwise.
 
 ## Top-level fields
 
 | Rust field | Meaning |
 | --- | --- |
 | `reader_name` | PC/SC reader that supplied this card |
-| `card_generation` | `V1`, `V2`, or `Unknown`, based on the published ATR list |
+| `card_generation` | `V1`, `V2`, or `Unknown`, from the published ATR list |
 | `id_number` | Required 15-character Emirates ID number |
-| `card_number` | Required card serial/number stored by the ID applet |
+| `card_number` | Required card serial stored by the ID applet |
 | `photo_jpeg` | JPEG bytes when requested and publicly readable |
-| `holder_signature_image` | Signature-image payload when requested and available |
-| `non_modifiable` | Core identity fields |
-| `modifiable` | Occupation, residency, passport and education fields |
+| `holder_signature_image` | Signature payload when requested and available |
+| `non_modifiable` | Core identity fields, borrowed by `identity()` |
+| `modifiable` | Occupation, residency, passport, education, borrowed by `extended()` |
 | `read_status` | Per-group access result |
+
+The [field reference](field-reference.md) lists every field in every group.
 
 ## Empty values and inaccessible groups
 
-An individual `Option<String>` being `None` means that field was empty or not
-present in a successfully decoded group. Consult `read_status` to understand
-whether the containing optional group was read:
+Check the group status first, then the field:
 
-| Status | Meaning |
-| --- | --- |
-| `Read` | The elementary file was read and decoded |
-| `NotRequested` | Disabled through `ReadOptions` |
-| `NotAvailable` | The card reports that the optional file does not exist |
-| `Protected` | The card requires an authenticated/secure-messaging operation |
+- If the status is `Read`, `None` means the field was absent or decoded as empty.
+- If the status is `NotRequested`, `NotAvailable`, or `Protected`, `None` does
+  not tell you whether the card stores a value.
 
-Dates are returned as `YYYY-MM-DD`. Numeric BCD codes are returned as strings
-so leading zeroes are preserved and callers do not accidentally treat codes as
-quantities.
+Required groups must succeed before a snapshot is returned. See
+[errors and read statuses](error-handling.md) for the status definitions and
+failure behavior.
 
 ## What the SDK formats
 
-The card stores some values in a form built for machines rather than for
-display: packed BCD dates, comma-delimited names, single-letter codes. Deciding
-which of these the SDK should convert uses one rule:
+> The SDK preserves decoded card values and provides explicit helpers for
+> documented name separators, identifier formatting, and known code
+> interpretation. Applications control localization and presentation.
 
-> **Format toward what the card prints. Anything beyond that belongs to the
-> application.**
+The decoder converts chip encodings into Rust values: UTF-8 text, digit strings
+for packed binary-coded decimal (BCD) codes, and `YYYY-MM-DD` dates. For text,
+it removes outer NUL padding and whitespace. Here, **stored** or **raw** means
+that decoded value, not an untouched copy of the chip bytes.
 
-Decoding a packed-BCD date into `YYYY-MM-DD`, joining comma-delimited name
-components with spaces, and grouping the identifier as `784-YYYY-NNNNNNN-C` all
-produce what a reader sees on the document, in any language. Turning the `M`
-code into `Male` or `ذكر` does not: those are translations, and the card's own
-`Sex` field prints `M`. So the SDK interprets the code into a `Gender` value
-and leaves the label to the caller.
+Formatting helpers operate on the snapshot and leave its fields, original
+getters, and serialization unchanged. Borrowed getters allocate no new strings;
+formatted names and identifiers return owned strings. The `Gender` type
+interprets known codes and preserves unrecognized ones.
 
-The rule applies to coded fields added later — marital status, occupation type,
-sponsor type, and the rest. Interpret the code into a type when its meaning is
-verified; do not ship a translation table.
-
-Formatting is always additive. Raw accessors, public fields, and serialization
-keep returning the decoded value, so nothing the card supplied is discarded.
-See [API reference](api-reference.md) for the formatting accessors.
-
-## Fast identity-only reads
+For the same language, the field and original getter return the same value:
 
 ```rust,no_run
 use emirates_id_reader::{CardSession, ReadOptions};
 
 fn main() -> Result<(), emirates_id_reader::Error> {
-let session = CardSession::connect_first()?;
-let card = session.read_with_options(ReadOptions::identity_only())?;
+    let session = CardSession::connect_first()?;
+    let card = session.read_with_options(ReadOptions::identity_only())?;
 
-println!("{:?}", card.card_generation);
-println!("{}", card.id_number);
-println!(
-    "{}",
-    card.non_modifiable.full_name_english.as_deref().unwrap_or("")
-);
-Ok(())
+    let field = card.identity().full_name_english.as_deref();  // public field
+    let stored = card.get_name_in(emirates_id_reader::Language::English);
+    let display = card.get_formatted_name_in(emirates_id_reader::Language::English);
+    let _ = (field, stored, display);
+    Ok(())
 }
 ```
 
-Use `session.read()` when photographs and all optional public groups are
-needed. Large binary values are owned byte vectors and remain only in memory
-unless the calling application explicitly persists them.
+Applications choose labels and business rules: translating
+`M` into `Male` or `ذكر`, expanding an occupation or marital-status code into a
+label, deciding which name component is a family name, or deciding whether a
+date makes someone eligible for something. The SDK ships no translation tables
+and interprets no code except gender.
+
+The rule applies to coded fields added later. Interpret a code into a type when
+its meaning is verified and documented; do not ship a translation table for it.
+
+## Choosing a language
+
+`Language` is `English` or `Arabic`, and bilingual values are stored as separate
+fields rather than one localized string.
+
+- `get_name()` and `get_formatted_name()` prefer English and fall back to
+  Arabic. The `_in` variants return only the language you ask for.
+- `get_nationality_in()` has **no fallback**. A card that stores only an Arabic
+  nationality description returns `None` for English, so request the language
+  you want and handle its absence.
+- Place of birth, titles, and the extended descriptions have no accessors. Read
+  the paired `_arabic` and `_english` fields through `identity()` or
+  `extended()` and apply your own preference.
+
+Nationality also has an optional `nationality_code` field. Read it independently
+of the descriptions; neither the code nor either description is guaranteed to
+be populated.
+
+<a id="fast-identity-only-reads"></a>
+
+For identity-only reads and optional groups, see
+[reading options](readers-and-sessions.md#reading-options).
+
+## Topic guides
+
+| Guide | Covers |
+| --- | --- |
+| [Names](names.md) | Separators, components, bilingual fallback |
+| [Codes and identifiers](codes-and-identifiers.md) | ID numbers, gender, coded fields |
+| [Dates](dates.md) | Date format, missing dates, calculating age |
+| [Photos and signatures](photos-and-signatures.md) | Image groups and validation |
+| [Extended information](extended-information.md) | Employment, family, passport, residency, education |

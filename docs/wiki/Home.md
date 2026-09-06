@@ -3,36 +3,39 @@
 A Rust SDK for reading public identity fields, photographs, and signature
 payloads from Emirates ID contact chips through native PC/SC.
 
-The public API is designed around connecting once, reading an owned snapshot,
-and accessing values with `get_name()`, `get_photo()`, and other borrowed
-getters. V1 and V2 use the same data model; optional fields and group statuses
-describe what the individual card exposes.
+Connect to a reader, read a snapshot into memory, then access it with
+`get_formatted_name()`, `get_photo()`, and the other getters. V1 and V2 share
+one data model; optional fields and group statuses describe what an individual
+card exposes.
 
 ## Start here
 
-- [Getting started](Getting-Started): prerequisites, installation, first read.
-- [API reference](API-Reference): session methods, getters, options, serialization.
-- [Field reference](Field-Reference): every decoded public field and its type.
-- [Application integration](Application-Integration): UI workers, images, removal, ownership.
-- [Error handling](Error-Handling): statuses and recovery behavior.
-- [Card generations](Card-Generations): V1/V2 classification and field availability.
-- [Troubleshooting](Troubleshooting): setup and common failures.
-- [Security](Security): data handling and authenticity boundaries.
-- [Testing](Testing): automated coverage and hardware validation status.
-- [Architecture](Architecture): source layout and protocol design.
-- [Migration](Migration): changes from the original extracted code.
-- [Contributing](Contributing): checks and release preparation.
+- **New to the SDK?** [Installation and platforms](Platforms), then
+  [your first read](Getting-Started).
+- **Working with a value?** Start at [data model and formatting](Data-Model)
+  and follow the topic guide for [names](Names),
+  [codes and identifiers](Codes-And-Identifiers), [dates](Dates),
+  [photos and signatures](Photos-And-Signatures), or
+  [extended information](Extended-Information).
+- **Looking something up?** The [API reference](API-Reference) indexes every
+  method and the [field reference](Field-Reference) every field.
+- **Something went wrong?** [Troubleshooting](Troubleshooting) for setup,
+  [errors and read statuses](Error-Handling) for behavior at runtime.
+
+The sidebar lists every page, grouped by purpose.
 
 ## Scope and status
 
-Version 0.4.0 remains experimental. The native backend supports Windows, Linux, and macOS contact PC/SC.
-See [platform setup](Platforms). Historical hardware results came with the imported
-project; the refactor requires fresh hardware validation. Unknown ATRs are
-probed, but future generations are not guaranteed to work.
+Version 0.4.0 remains experimental. The native backend supports Windows, Linux,
+and macOS contact PC/SC. Historical hardware results came with the imported
+project; the refactor needs fresh validation. Unknown ATRs are probed, but
+future generations are not guaranteed to work.
 
-This SDK is independent and unofficial. It does not authenticate the card,
-read fingerprints, or bypass protected files. It contains no proprietary ICP
-credentials or runtime components.
+This SDK is independent and unofficial. It does not authenticate the card, read
+fingerprints, or bypass protected files, and it contains no proprietary ICP
+credentials or runtime components. See
+[security and access boundaries](Security) and
+[sources and acknowledgments](Sources).
 
-This Wiki is generated from the repository's documentation. See
-[Wiki setup](Wiki-Setup) for regeneration and publication instructions.
+This Wiki is generated from the repository's documentation; see
+[documentation maintenance](Wiki-Setup).

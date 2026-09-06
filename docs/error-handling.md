@@ -1,4 +1,13 @@
-# Error handling
+<a id="error-handling"></a>
+
+# Errors and read statuses
+
+A read returns either a complete `EmiratesIdData` snapshot or an `Error`.
+Optional groups that were disabled, absent, or refused have a `read_status`
+entry instead of a value. Transport failures and malformed data return `Err`;
+the SDK does not return a partial snapshot for those failures.
+
+## Error kinds
 
 Use the error kind to choose a recovery action. Error messages are diagnostic
 text and may change; do not parse them as a stable interface.
@@ -32,35 +41,54 @@ fn main() {
 }
 ```
 
-`connect_first()` skips empty readers, continues trying remaining readers
-after connection failures, and returns the first non-absence failure if no
-connection succeeds. A stopped service or sharing failure is not silently
-converted into `NoCard`.
+`connect_first()` skips empty readers, keeps trying the remaining readers after
+a connection failure, and returns the first non-absence failure if none
+succeeds. A stopped service or a sharing failure is never quietly converted into
+`NoCard`.
 
-## Optional data is not a connection error
+<a id="optional-data-is-not-a-connection-error"></a>
 
-For photo, modifiable data, and signature files:
+## Read statuses
 
-| Card status | SDK outcome |
+`read_status` carries one `DataGroupStatus` per group. It answers "was this
+group readable", which is a different question from whether an individual field
+holds a value.
+
+| Status | Meaning |
+| --- | --- |
+| `Read` | The elementary file was read and decoded |
+| `NotRequested` | The group was disabled through `ReadOptions` |
+| `NotAvailable` | The card reports that the optional file does not exist |
+| `Protected` | The card requires an authenticated or secure-messaging operation |
+
+For the photo, extended data, and signature files, the card's own response
+determines the status:
+
+| Card status word | SDK outcome |
 | --- | --- |
 | `6982`, `6985` | `DataGroupStatus::Protected` |
 | `6A82`, `6A83` | `DataGroupStatus::NotAvailable` |
-| Group disabled | `DataGroupStatus::NotRequested` |
-| Successful read/parse | `DataGroupStatus::Read` |
+| Group disabled in `ReadOptions` | `DataGroupStatus::NotRequested` |
+| Successful read and parse | `DataGroupStatus::Read` |
 
-Those statuses do not fail the entire read for optional groups. The required
-identifier/core files must succeed. Transport failure or malformed content
-fails the read regardless of group; no partial snapshot is returned.
+None of these fail the read. The required identifier and core identity files
+must succeed; a transport failure or malformed content fails the read for any
+group, and no partial snapshot is ever returned.
+
+Retrying under the same access conditions does not unlock a `Protected` group.
+The SDK does not perform authentication or establish secure messaging. Fields the SDK never requests at all are listed in the
+[field reference](field-reference.md) and explained in
+[security and access boundaries](security.md).
 
 ## Protocol recovery limits
 
 The SDK follows `61xx` response continuation, permits one `6Cxx` length
-correction per command, and caps a complete APDU exchange at 32 responses.
-It accepts data returned with the `6282` end-of-file warning. Public files are
-bounded to 16 KiB, including their four-byte header; empty continuation chunks
-are errors. Application-root fallback occurs only when the public directory
-is reported absent, not on transport/security failures.
+correction per command, and caps a complete APDU exchange at 32 responses. It
+accepts data returned with the `6282` end-of-file warning. Public files are
+bounded to 16 KiB including their four-byte header, and empty continuation
+chunks are errors. Application-root fallback happens only when the public
+directory is reported absent, never on a transport or security failure.
 
 Do not build a tight retry loop. Allow user intervention or bounded application
-backoff, and reconnect after removal/reset. The SDK performs no automatic
-reconnection or authentication.
+backoff, and reconnect after a removal or reset. The SDK performs no automatic
+reconnection and no authentication.

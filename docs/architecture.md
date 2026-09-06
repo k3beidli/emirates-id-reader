@@ -1,4 +1,6 @@
-# Architecture
+<a id="architecture"></a>
+
+# Architecture and chip communication
 
 The SDK separates the public lifecycle from platform resources and card
 decoding. Its core read flow can be exercised with a synthetic command
@@ -11,13 +13,24 @@ Application
        -> Reader (protocol.rs): application/files, chunking, optional groups
             -> exchange_apdu (apdu.rs): continuation and length correction
             -> decode.rs: TLV, UTF-8, BCD, calendar dates
-       -> EmiratesIdData (data.rs): owned snapshot and borrowed accessors
+       -> EmiratesIdData (data.rs): owned snapshot, getters, and formatting
 ```
 
 `lib.rs` exports the consumer API. Internal modules are private so applications
 do not depend on raw handles, APDU details, or implementation-specific file
 layouts. `error.rs` defines shared structured errors. No app-specific state,
 Tauri commands, HTTP endpoints, or persistence is part of the SDK.
+
+## Protocol terms
+
+- **PC/SC** is the operating-system interface used to communicate with readers.
+- **ATR** (Answer to Reset) is the byte sequence captured when connecting to a
+  card. This SDK compares it with documented values to classify the chip family.
+- **AID** (Application Identifier) selects the Emirates ID application on the chip.
+- **APDU** is a command or response exchanged with that application. The response
+  ends with a two-byte status word.
+- **TLV** (tag, length, value) identifies a field, states its byte length, and
+  carries its contents. **BCD** encodes decimal digits in four-bit groups.
 
 ## Resource ownership
 

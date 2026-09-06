@@ -1,4 +1,6 @@
-# Emirates ID card generations
+<a id="emirates-id-card-generations"></a>
+
+# V1/V2 compatibility
 
 The names **V1** and **V2** in this SDK refer to the chip generations used by
 the official ICP SDK documentation. They do not refer only to the artwork
@@ -7,28 +9,34 @@ printed on the card, the issue date, or whether the card is still valid.
 `CardGeneration` is deliberately separate from field availability. The ATR
 identifies the documented chip family; the optional values and `ReadStatus`
 report what that individual card actually exposes. For example, a
-hardware-tested, unexpired V1 card returned extended public fields plus its
+V1 card in the imported hardware results returned extended public fields plus its
 photograph and holder-signature image. Callers must therefore inspect the data
 and group status instead of treating the V1/V2 label as a field-access policy.
 
 ## Detection
 
-`CardSession::card_generation()` compares the card's ATR with the values
-published in the ICP developer guide:
+`CardSession::card_generation()` compares the card's ATR with the four values
+published in the developer guide:
 
-| Generation | Published ATR |
-| --- | --- |
-| V1 | `3B 6A 00 00 80 65 A2 01 30 01 3D 72 D6 41` |
-| V1 | `3B 6A 00 00 80 65 A2 01 31 01 3D 72 D6 41` |
-| V2 | `3B 7A 95 00 00 80 65 A2 01 30 01 3D 72 D6 41` |
-| V2 | `3B 7A 95 00 00 80 65 A2 01 31 01 3D 72 D6 41` |
+| Generation | Reset type as published | ATR |
+| --- | --- | --- |
+| V1 | Warm reset | `3B 6A 00 00 80 65 A2 01 30 01 3D 72 D6 41` |
+| V1 | Warm reset | `3B 6A 00 00 80 65 A2 01 31 01 3D 72 D6 41` |
+| V2 | Cold reset | `3B 7A 95 00 00 80 65 A2 01 30 01 3D 72 D6 41` |
+| V2 | Warm reset | `3B 7A 95 00 00 80 65 A2 01 31 01 3D 72 D6 41` |
+
+The guide labels both V1 entries as warm resets; they are reproduced here as
+published. The SDK matches the byte sequence and does not rely on the label.
 
 An unrecognised ATR is reported as `CardGeneration::Unknown`; the SDK still
-attempts the normal application and file probes for forward compatibility.
-ATR recognition identifies a documented card family but is not proof that a
-card is genuine.
+attempts the normal application and file probes for forward compatibility. ATR
+recognition identifies a documented card family but is not proof that a card is
+genuine, a point the same section of the guide makes explicitly. See
+[security and access boundaries](security.md).
 
-Source: [ICP C++ Developer Guide](https://icp.gov.ae/ica_files/documentations/cplusplus_developer_guide.pdf), section 5.7.
+Source: *C++ Developer guide* (EIDA Toolkit v2.5), §5.7 "Read Card ATR", p. 16:
+<https://icp.gov.ae/ica_files/documentations/cplusplus_developer_guide.pdf>.
+Full details in [sources and acknowledgments](sources.md).
 
 ## Data stored in V1
 
@@ -48,10 +56,13 @@ The ICP V1 field specification lists:
 Stored does not mean anonymously readable. In particular, ICP states that the
 photograph on old cards is protected by secure messaging, and biometrics are
 outside this SDK's public-data scope. The SDK never attempts fingerprint
-access. An inaccessible optional file is represented in `ReadStatus` instead
-of failing the entire public-data read.
+access. Handled access-refusal responses for optional files produce a group status.
+Transport failures and malformed data still fail the read.
 
-Source: [Fields Stored in UAE ID Card V1](https://icp.gov.ae/wp-content/uploads/2020/10/Fields_Stored_in_UAE_ID_Card_V1.docx) and the [ICP SDK FAQ](https://icp.gov.ae/en/id-card-benefits/sdk-toolkit/sdk-faq/).
+Source: *Fields Stored in UAE ID Card V1*
+(<https://icp.gov.ae/wp-content/uploads/2020/10/Fields_Stored_in_UAE_ID_Card_V1.docx>)
+and the ICP *SDK FAQ*
+(<https://icp.gov.ae/en/id-card-benefits/sdk-toolkit/sdk-faq/>).
 
 ## Data added in V2
 
@@ -67,11 +78,12 @@ The V2 field document describes additional groups:
 
 The developer guide says applications using the proprietary toolkit must not
 request its V2-only extension API from a V1 card. This Rust SDK does not call
-that toolkit API: it probes the public elementary files and models every value
+that toolkit API: it probes the public elementary files and models non-required values
 as optional. This both preserves one stable data model and handles later V1
 cards that expose some fields associated with the extended layout.
 
-Source: [Fields Stored in UAE ID Card V2](https://icp.gov.ae/ica_files/documentations/Fields_Stored_in_UAE_ID_Card_V2.docx).
+Source: *Fields Stored in UAE ID Card V2*
+(<https://icp.gov.ae/ica_files/documentations/Fields_Stored_in_UAE_ID_Card_V2.docx>).
 
 ## Field compatibility matrix
 
@@ -114,15 +126,8 @@ security policy or guarantee that a holder has a non-empty value.
 
 ## Historical validation supplied with the import
 
-These results describe the imported 0.2 implementation. Fresh hardware
-validation of 0.3 is pending; synthetic tests are not hardware evidence.
-
-- V1 and V2 contact reading are hardware-validated with an HID OMNIKEY 3x21
-  reader, using cards that return the exact published ATRs.
-- The tested V1 card returned `3B 6A 00 ... 31 ...`, while the tested V2 card
-  returned `3B 7A 95 ... 31 ...`.
-- Both generations passed identity-only and full public-data reads. The tested
-  V1 card exposed more fields than the historical V1 field list, so generation
-  and actual group availability remain intentionally independent.
-- Removal/reinsert lifecycle validation remains outstanding for the V1 card;
-  see [testing](testing.md).
+The imported 0.2 project reported successful V1 and V2 reads with an HID
+OMNIKEY 3x21 on Windows, including extended fields on the tested V1 card.
+Those results do not establish hardware support for the current SDK revision.
+See [testing and hardware validation](testing.md) for the evidence table and
+the checklist for new validation.

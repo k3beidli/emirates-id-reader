@@ -4,78 +4,64 @@
 
 Use this lifecycle for a desktop UI, kiosk, or local service:
 
-1. Discover/select a reader and connect when a card is inserted.
-2. Read the fields needed for that operation into one `EmiratesIdData`.
-3. Bind borrowed getters to your UI, or make deliberate owned copies when
-   your UI framework requires ownership.
+1. Discover and select a reader, then connect when a card is inserted.
+2. Read the fields that operation needs into one `EmiratesIdData`.
+3. Use formatted getters for display, or borrow the original values. Copy
+   borrowed data only when the UI framework needs to own it.
 4. Poll `is_present()` at a modest interval, for example 200 milliseconds.
-5. On removal, clear the UI and application copies, drop the snapshot and
+5. On removal, clear the UI and any application copies, drop the snapshot and
    session, and reconnect after reinsertion.
 
-`read()` always performs a fresh read. `get_name()`, `get_photo()`, and other
-snapshot accessors use already-read data. A snapshot does not automatically
-update when a card is removed or replaced. Dropping it frees allocations but
-does not guarantee cryptographic memory zeroization.
+`read()` performs a fresh read; getters use values already in the snapshot. A snapshot does not update itself when the card is removed or replaced,
+and dropping it frees allocations without guaranteeing memory zeroization.
 
-The runnable `watch_removal` example illustrates presence polling. A
-production UI should also clear state when presence checks or reads fail,
-and provide its own stop/shutdown control for the worker.
+The runnable `watch_removal` example illustrates presence polling. A production
+UI should also clear state when a presence check or read fails, and provide its
+own stop control for the worker.
 
-## Blocking and concurrency
+<a id="blocking-and-concurrency"></a>
 
-PC/SC calls are synchronous and may block, including transaction acquisition.
-Run them on a dedicated worker or your async runtime's blocking executor.
-Do not execute reads on a GUI event thread. A timeout around an async wrapper
-does not cancel the underlying native call; the SDK has no cancellation API.
+## Threading
 
-Reads sharing one session are protected by a mutex and a PC/SC transaction.
-The mutex prevents concurrent callers from interleaving selections on the
-same handle. The transaction coordinates with other PC/SC connections.
-Prefer one owner for a reader's lifecycle; a card reset or removal requires
-a new session rather than repeated retries on the old handle.
+PC/SC calls are synchronous and may block. Run them on a dedicated worker or
+your async runtime's blocking executor, never on a GUI event thread. A timeout
+around an async wrapper does not cancel the underlying native call; the SDK has
+no cancellation API.
 
-## Photos and signatures
+Reads on one session are already serialized for you, and a card reset or removal
+needs a new session rather than retries on the old handle. See
+[readers, sessions, and reading options](Readers-And-Sessions) for the
+connection lifetime and transaction details.
 
-Request a photograph without other expensive groups:
+<a id="photos-and-signatures"></a>
 
-```rust,no_run
-use emirates_id_reader::{CardSession, ReadOptions};
+## Displaying images
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let session = CardSession::connect_first()?;
-    let card = session.read_with_options(ReadOptions::identity_only().with_photo(true))?;
-    if let Some(jpeg) = card.get_photo() {
-        // Pass jpeg to your UI image decoder; copy only if the UI needs ownership.
-        let _ = jpeg;
-    }
-    Ok(())
-}
-```
+`get_photo()` and `get_signature()` hand you borrowed bytes, so copy only if
+your image widget needs ownership. The SDK validates the JPEG prefix and TLV
+structure, not decodability, so your decoder must handle failure, and signature
+payloads carry no asserted MIME type. Neither accessor writes a file: storing or
+transmitting an image is always an explicit application operation. See
+[photos and signatures](Photos-And-Signatures).
 
-The SDK checks the JPEG prefix and TLV structure, not full image decodability.
-Your image decoder must validate dimensions/content and handle decoding
-failure. Signature payloads are returned without an asserted MIME type.
-Neither accessor writes files. Store or transmit data only as an explicit
-application operation.
+<a id="extended-fields-and-missing-values"></a>
 
-## Extended fields and missing values
+## Missing values
 
-Occupation, residency, passport, education, family, and mother-name fields
-are in `card.extended()`. Enable `with_modifiable_data(true)` or use `read()`.
-An absent field is `None`; do not treat it as an empty verified value. Inspect
-`read_status.modifiable` to determine whether the group was requested/read.
-
-Dates are validated calendar strings. Codes stay strings to preserve leading
-zeroes. Names and codes are not normalized into application enums. Perform
-application-specific formatting separately and preserve the original value
-if your workflow needs it.
+An absent field is `None`; do not treat it as a verified empty value. Whether
+the containing optional group was requested and read is recorded separately in
+`read_status`. Applying your own formatting is fine, but keep the original value
+if your workflow may need it later. See
+[data model and formatting](Data-Model) and
+[extended information](Extended-Information).
 
 ## Integration boundaries
 
 This is a Rust library, usable directly from Rust applications or the Rust
-backend of a desktop app. It does not expose a network service, C ABI, .NET
-assembly, JavaScript package, or proprietary ICP SDK compatibility layer.
-Authentication, fingerprint reads, card genuineness, signature verification,
-and contactless access are outside this implementation.
+backend of a desktop app. It exposes no network service, C ABI, .NET assembly,
+JavaScript package, or proprietary ICP SDK compatibility layer. Authentication,
+fingerprint reads, card genuineness, signature verification, and contactless
+access are outside this implementation.
 
-See [security](Security) and [error handling](Error-Handling).
+See [security and access boundaries](Security) and
+[errors and read statuses](Error-Handling).

@@ -21,14 +21,14 @@ python scripts/build_wiki.py --check
 `cargo package` expects committed changes; use `--allow-dirty` only for local
 precommit verification. It builds a local archive and does not publish it.
 Examples are built by the all-targets Clippy check. Unit tests do not require
-hardware. Reader/driver validation must follow `docs/testing.md` separately.
+hardware. Reader/driver validation must follow [testing and hardware validation](docs/testing.md) separately.
 
 ## Documentation
 
 Edit canonical guides in `docs/`, then run `python scripts/build_wiki.py`.
 Commit generated `docs/wiki/` pages alongside the guide changes. The generator
 also derives field tables from public Rustdoc comments in `src/data.rs`.
-Do not edit generated Wiki pages directly. See `docs/wiki-setup.md` for the
+Do not edit generated Wiki pages directly. See [documentation maintenance](docs/wiki-setup.md) for the
 separate GitHub Wiki publishing procedure.
 
 ## Releases

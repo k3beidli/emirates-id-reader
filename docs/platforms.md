@@ -1,9 +1,20 @@
-# Platform setup
+<a id="platform-setup"></a>
 
-The Rust SDK supports native PC/SC on Windows, Linux, and macOS through
-the [pcsc bindings](https://github.com/bluetech/pcsc-rust). The same
-`CardSession` and data accessors work on each platform. Contactless and
-browser readers are outside the current scope.
+# Installation and platforms
+
+The SDK uses native PC/SC on Windows, Linux, and macOS through the
+[pcsc bindings](https://github.com/bluetech/pcsc-rust). The same `CardSession`
+and accessors work on each. Browser and WebUSB readers, mobile platforms,
+contactless NFC, and bindings for other languages are out of scope.
+
+## Requirements
+
+- Windows 10/11, Linux with pcsc-lite, or macOS with the system PCSC framework.
+- Rust 1.85 or newer and the platform build toolchain.
+- A PC/SC contact reader with its normal driver, and an inserted Emirates ID.
+
+Card reading requires no proprietary toolkit, application server, or network
+connection. Installing the SDK and its dependencies may require downloads.
 
 | Platform | Native library | Build prerequisite | Runtime prerequisite |
 | --- | --- | --- | --- |
@@ -11,15 +22,34 @@ browser readers are outside the current scope.
 | Linux | pcsc-lite (`libpcsclite`) | C toolchain, pkg-config, pcsc-lite headers | pcscd service and CCID/reader driver |
 | macOS | System PCSC framework | Rust, Xcode Command Line Tools | Compatible reader/driver; system smart-card service |
 
+## Add the dependency
+
+```toml
+[dependencies]
+emirates-id-reader = { git = "https://github.com/k3beidli/emirates-id-reader" }
+```
+
+For development alongside this checkout, use a path dependency instead:
+
+```toml
+[dependencies]
+emirates-id-reader = { path = "../emirates-id-reader" }
+```
+
+Commit your application's `Cargo.lock` to retain the resolved Git revision. For
+a release you can also pin `rev = "<full reviewed commit SHA>"`. Version 0.4.0
+is the package version in this repository; these instructions assume neither a
+crates.io publication nor a Git release tag.
+
 ## Windows
 
-Install Rust using the MSVC toolchain and its C++ build prerequisites. Windows
+Install Rust with the MSVC toolchain and its C++ build prerequisites. Windows
 supplies WinSCard. Connect the reader and confirm the Smart Card service is
-available. No proprietary ICP toolkit is required.
+running. No proprietary ICP toolkit is required.
 
 ## Linux
 
-On Debian/Ubuntu, install build and runtime prerequisites:
+On Debian and Ubuntu:
 
 ```sh
 sudo apt-get update
@@ -27,21 +57,23 @@ sudo apt-get install build-essential pkg-config libpcsclite-dev pcscd libccid
 sudo systemctl enable --now pcscd.socket
 ```
 
-On Fedora-family distributions, the corresponding packages include
+On Fedora-family distributions the corresponding packages are
 `pcsc-lite-devel`, `pcsc-lite`, `pcsc-lite-ccid`, and `pkgconf-pkg-config`.
-Service management and access policy depend on the distribution. Run the
-application as your ordinary user; configure the system's PC/SC access policy
-if it denies access. Do not use elevated execution as the application's default.
+Service management and access policy vary by distribution. Run as your ordinary
+user and adjust the system's PC/SC access policy if it denies access; elevated
+execution should not be the application's default.
 
-Cross-compilation requires the target PC/SC library and pkg-config setup, not
+Cross-compilation needs the target's PC/SC library and pkg-config setup, not
 just a Rust target. Native CI builds avoid that ambiguity.
 
 ## macOS
 
 Install Xcode Command Line Tools (`xcode-select --install`) and Rust. The
-binding links Apple's system PCSC framework; installing a second PC/SC stack
-through Homebrew is not required. Use a reader supported by macOS or install
-the manufacturer's appropriate driver.
+binding links Apple's system PCSC framework, so a second PC/SC stack from
+Homebrew is unnecessary. Use a reader macOS supports, or install the
+manufacturer's driver.
+
+<a id="sample-application"></a>
 
 ## Validate locally
 
@@ -51,14 +83,11 @@ cargo run --features cli -- read --identity-only
 cargo run --features cli -- read
 ```
 
-Reads redact by default. `probe` reports reader/ATR connectivity without
+Reads redact by default. `probe` reports reader and ATR connectivity without
 reading personal fields. Run the [hardware checklist](testing.md) for your
-reader and card generation. CI exercises native builds and synthetic tests;
-it does not attach a physical reader. Historical V1/V2 hardware evidence is
-Windows-specific and is not evidence of Linux/macOS reader compatibility.
+reader and card generation. CI exercises native builds and synthetic tests and
+attaches no physical reader; historical V1/V2 hardware evidence is
+Windows-specific; Linux and macOS reader compatibility needs separate hardware
+validation.
 
-## Sample application
-
-A desktop sample is planned for Windows first, with Linux/macOS packages to
-follow. It is not included in the repository yet. The CLI and Rust examples
-can already be built on all three systems.
+Continue with [your first read](getting-started.md).

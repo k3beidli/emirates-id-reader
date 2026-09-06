@@ -44,13 +44,22 @@ mod tests;
 #[cfg(test)]
 mod sdk_tests;
 
-// Compile the consumer examples in the shipped guides as Rustdoc tests.
+// Compile the consumer examples in the shipped guides as Rustdoc tests. Every
+// guide carrying a Rust example belongs here; without it the example is never
+// compiled. Card examples use `no_run`, formatting examples execute against
+// synthetic data.
 #[cfg(doctest)]
 #[doc = concat!(
     include_str!("../README.md"),
     "\n", include_str!("../docs/getting-started.md"),
+    "\n", include_str!("../docs/readers-and-sessions.md"),
+    "\n", include_str!("../docs/data-model.md"),
+    "\n", include_str!("../docs/names.md"),
+    "\n", include_str!("../docs/codes-and-identifiers.md"),
+    "\n", include_str!("../docs/dates.md"),
+    "\n", include_str!("../docs/photos-and-signatures.md"),
+    "\n", include_str!("../docs/extended-information.md"),
     "\n", include_str!("../docs/integration.md"),
     "\n", include_str!("../docs/error-handling.md"),
-    "\n", include_str!("../docs/data-model.md"),
 )]
 mod guide_examples {}

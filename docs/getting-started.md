@@ -1,37 +1,15 @@
-# Getting started
+<a id="getting-started"></a>
 
-Emirates ID Reader is an unofficial Rust SDK for local public-data extraction
-from contact chips. It uses native PC/SC directly. It requires no proprietary
-toolkit, background application server, or runtime network connection.
+# Your first read
 
-## Requirements
+Read one card and access its values without making a separate chip request for
+each field.
 
-- Windows 10/11, Linux with pcsc-lite, or macOS with the system PCSC framework.
-- Rust 1.85 or newer and the native platform build toolchain.
-- A PC/SC contact reader with its normal driver, and an inserted Emirates ID.
+<a id="requirements"></a>
+<a id="add-the-dependency"></a>
 
-Native transport supports Windows, Linux, and macOS. See [platform setup](platforms.md)
-for the required PC/SC service and build dependencies. Browser/WebUSB, mobile,
-contactless NFC, and bindings for other languages are not implemented.
-
-## Add the dependency
-
-```toml
-[dependencies]
-emirates-id-reader = { git = "https://github.com/k3beidli/emirates-id-reader" }
-```
-
-For development alongside this checkout, use a path dependency instead:
-
-```toml
-[dependencies]
-emirates-id-reader = { path = "../emirates-id-reader" }
-```
-
-Commit your application's `Cargo.lock` to retain its resolved Git revision.
-For a release, you can also add `rev = "<full reviewed commit SHA>"` to the Git
-dependency. Version 0.4.0 is the package version in this repository; these
-instructions do not assume a crates.io publication or Git release tag.
+First, follow [installation and platforms](platforms.md), connect your reader,
+and insert an Emirates ID with the chip facing the reader's contacts.
 
 ## Read a card
 
@@ -55,35 +33,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-`get_formatted_name()` prefers English, with Arabic as a fallback.
-`get_formatted_name_in()` returns only the requested language.
+`connect_first()` opens a connection to an inserted card. `read_with_options()`
+reads the selected groups into an `EmiratesIdData` snapshot. Getters use that
+snapshot without additional chip communication; formatting helpers create new
+strings. The snapshot remains usable after the session is dropped.
 
-The card delimits name components with commas, so the stored English name looks
-like `AHMED,ALI,,ALKAABI`. The formatted accessors replace those separators with
-single spaces and drop empty positions, giving `AHMED ALI ALKAABI`. Everything
-else is left alone: the SDK preserves capitalization, spelling, diacritics, and
-component order, and never transliterates a name or decides which position holds
-a given name or a family name.
+<a id="choose-a-reader"></a>
 
-Nothing is overwritten. `get_name()` and `get_name_in()` still return the stored
-value with its separators, `name_components_in()` borrows the individual
-components including empty positions, and serialization is unchanged. The same
-applies to the identifier: `formatted_id_number()` groups it as printed, and
-`get_id_number()` still returns the fifteen stored digits.
+## Understanding the example
 
-`get_photo()` returns `Option<&[u8]>`. A missing value can mean a blank field,
-a skipped read, a missing file, or a protected file. Inspect
-`card.read_status.photo` for the group outcome. The photo accessor does not
-trigger another card read. Use `session.read()` to request all public groups.
+| API used | Guide |
+| --- | --- |
+| `connect_first()`, `read_with_options()` | [Readers, sessions, and reading options](readers-and-sessions.md) |
+| `get_formatted_name()`, `get_formatted_name_in()` | [Names](names.md) |
+| `formatted_id_number()` | [Codes and identifiers](codes-and-identifiers.md) |
+| `get_photo()` | [Photos and signatures](photos-and-signatures.md) |
 
-## Choose a reader
+`ReadOptions::identity_only()` keeps the read fast by skipping the expensive
+optional groups; `.with_photo(true)` adds one back. Use `session.read()` when
+you want every public group supported by this SDK.
 
-Call `CardSession::reader_names()` and present the returned names in your UI.
-Pass the exact selected name to `CardSession::connect(&name)`. An empty list
-means there are no installed readers; a stopped or unavailable PC/SC service
-can instead return an error. `connect_first()` chooses the first accessible
-reader with any card, and verifies the Emirates ID application when you read.
-It does not search every reader for a particular cardholder or card type.
+Optional values return `None` when they are absent. That is not the same as a
+group being unreadable, so inspect `card.read_status` when the difference
+matters; see [errors and read statuses](error-handling.md).
 
 ## Try the examples
 
@@ -98,8 +70,12 @@ cargo run --features cli -- probe
 cargo run --features cli -- read --identity-only
 ```
 
-The CLI is optional and reads with redacted output by default. To deliberately
-print basic personal values, use `read --show-personal-data`.
+The CLI is optional and redacts reads by default. To deliberately print basic
+personal values, use `read --show-personal-data`.
 
-Continue with [API reference](api-reference.md), [application integration](integration.md),
-and [troubleshooting](troubleshooting.md).
+## Next
+
+- [Data model and formatting](data-model.md): what the SDK decodes, and what it
+  leaves to you
+- [Application integration](integration.md): UI workers, card removal, ownership
+- [Troubleshooting](troubleshooting.md): setup and common failures

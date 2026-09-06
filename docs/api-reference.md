@@ -1,10 +1,14 @@
 # API reference
 
+Look up the main session methods, data getters, and read options here. Each
+section links to a guide with examples and explanations.
+
 The crate root exports `CardSession`, `EmiratesIdData`, `NonModifiableData`,
-`ModifiableData`, `ReadOptions`, `ReadStatus`, `DataGroupStatus`, `CardGeneration`,
-`Language`, `Error`, `ErrorKind`, and `PROTECTED_AND_SKIPPED_FIELDS`.
-All public items have Rustdoc documentation. Run `cargo doc --no-deps --open`
-for signatures, field descriptions, and cross-references for your checkout.
+`ModifiableData`, `ReadOptions`, `ReadStatus`, `DataGroupStatus`,
+`CardGeneration`, `Gender`, `Language`, `Error`, `ErrorKind`, and
+`PROTECTED_AND_SKIPPED_FIELDS`. All public items have Rustdoc. Run
+`cargo doc --no-deps --open` for signatures and cross-references matching your
+checkout.
 
 ## Session lifecycle
 
@@ -21,76 +25,60 @@ for signatures, field descriptions, and cross-references for your checkout.
 | `session.read()` | `Result<EmiratesIdData, Error>` | Read every supported public group |
 | `session.read_with_options(options)` | `Result<EmiratesIdData, Error>` | Read core identity and selected optional groups |
 
-There is no manual `close()` requirement: dropping a session disconnects its
-card, then releases the PC/SC context. Reconnect after card removal/reset.
-Reads are synchronous, hold a PC/SC transaction, and are serialized for each
-session. There is no SDK timeout, cancellation, or automatic retry facility.
+Dropping a session disconnects its card and releases the PC/SC context; there is
+no `close()`. Reads are synchronous, hold a PC/SC transaction, and are
+serialized per session. There is no timeout, cancellation, or retry facility.
+See [readers, sessions, and reading options](readers-and-sessions.md).
 
 ## Snapshot accessors
 
-Every accessor below reads the snapshot without chip I/O. The snapshot owns its
-data and remains usable after the session is dropped. Its borrows cannot
-outlive it. Accessors returning `&str`, `&[u8]`, or an iterator borrow and
-allocate nothing; the formatting accessors in the next section build a new
-`String`.
+Every accessor reads the snapshot without chip I/O. The snapshot owns its data
+and stays usable after the session is dropped, though its borrows cannot outlive
+it. Accessors returning `&str`, `&[u8]`, or an iterator allocate nothing.
 
-| Method | Return type | Meaning |
-| --- | --- | --- |
-| `get_name()` | `Option<&str>` | Stored English name, falling back to Arabic |
-| `get_name_in(Language)` | `Option<&str>` | Stored name in the exact language; no fallback |
-| `name_components_in(Language)` | `impl Iterator<Item = &str>` | Stored name components in card order |
-| `get_photo()` | `Option<&[u8]>` | JPEG photograph payload |
-| `get_signature()` | `Option<&[u8]>` | Signature-image payload; format may vary |
-| `get_id_number()` | `&str` | Required 15-digit ID |
-| `get_card_number()` | `&str` | Required 9-digit card number |
-| `get_date_of_birth()` | `Option<&str>` | `YYYY-MM-DD` |
-| `get_issue_date()` | `Option<&str>` | `YYYY-MM-DD` |
-| `get_expiry_date()` | `Option<&str>` | `YYYY-MM-DD` |
-| `get_gender()` | `Option<&str>` | Stored gender code |
-| `get_nationality_code()` | `Option<&str>` | Stored nationality code |
-| `get_nationality_in(Language)` | `Option<&str>` | Nationality description in the exact language |
-| `identity()` | `&NonModifiableData` | Every core field |
-| `extended()` | `&ModifiableData` | Every extended field |
+| Method | Return type | Meaning | Guide |
+| --- | --- | --- | --- |
+| `get_name()` | `Option<&str>` | Stored English name, falling back to Arabic | [Names](names.md) |
+| `get_name_in(Language)` | `Option<&str>` | Stored name in one language; no fallback | [Names](names.md) |
+| `name_components_in(Language)` | `impl Iterator<Item = &str>` | Stored components in card order | [Names](names.md) |
+| `get_photo()` | `Option<&[u8]>` | JPEG photograph payload | [Photos](photos-and-signatures.md) |
+| `get_signature()` | `Option<&[u8]>` | Signature payload; format may vary | [Photos](photos-and-signatures.md) |
+| `get_id_number()` | `&str` | Required 15-digit ID | [Codes](codes-and-identifiers.md) |
+| `get_card_number()` | `&str` | Required card number | [Codes](codes-and-identifiers.md) |
+| `get_gender()` | `Option<&str>` | Stored gender code | [Codes](codes-and-identifiers.md) |
+| `get_nationality_code()` | `Option<&str>` | Stored nationality code | [Codes](codes-and-identifiers.md) |
+| `get_nationality_in(Language)` | `Option<&str>` | Nationality description; no fallback | [Data model](data-model.md) |
+| `get_date_of_birth()` | `Option<&str>` | `YYYY-MM-DD` | [Dates](dates.md) |
+| `get_issue_date()` | `Option<&str>` | `YYYY-MM-DD` | [Dates](dates.md) |
+| `get_expiry_date()` | `Option<&str>` | `YYYY-MM-DD` | [Dates](dates.md) |
+| `identity()` | `&NonModifiableData` | Every core field | [Field reference](field-reference.md) |
+| `extended()` | `&ModifiableData` | Every extended field | [Extended](extended-information.md) |
 
 `Language` is `English` or `Arabic`. The API uses Rust's `snake_case`, so
-`get_name()` corresponds to the `getName()` style used in other languages.
-No JavaScript or other language bindings are supplied.
+`get_name()` corresponds to the `getName()` style used elsewhere. No JavaScript
+or other language bindings are supplied.
 
 ## Formatting accessors
 
-These are additive. They never change what the raw accessors, the public
-fields, or serialization return; see [data model](data-model.md) for the rule
-that decides what the SDK formats.
+Name and ID formatters return owned strings. Gender interpretation allocates
+only when preserving an unrecognized code; `Gender::code()` borrows its result.
+These methods leave the original getters, public fields, and serialization
+unchanged. See
+[data model and formatting](data-model.md) for the policy.
 
-| Method | Return type | Meaning |
-| --- | --- | --- |
-| `get_formatted_name()` | `Option<String>` | Display name, English with Arabic fallback |
-| `get_formatted_name_in(Language)` | `Option<String>` | Display name in the exact language |
-| `formatted_id_number()` | `String` | ID grouped as `784-YYYY-NNNNNNN-C` |
-| `gender()` | `Option<Gender>` | Interpreted gender code |
+| Method | Return type | Meaning | Guide |
+| --- | --- | --- | --- |
+| `get_formatted_name()` | `Option<String>` | Display name, English with Arabic fallback | [Names](names.md) |
+| `get_formatted_name_in(Language)` | `Option<String>` | Display name in one language | [Names](names.md) |
+| `formatted_id_number()` | `String` | ID grouped as `784-YYYY-NNNNNNN-C` | [Codes](codes-and-identifiers.md) |
+| `gender()` | `Option<Gender>` | Interpreted gender code | [Codes](codes-and-identifiers.md) |
+| `Gender::from_code(&str)` | `Gender` | `Male`, `Female`, or `Unrecognized` | [Codes](codes-and-identifiers.md) |
+| `Gender::code()` | `&str` | `M`, `F`, or the preserved unrecognized code | [Codes](codes-and-identifiers.md) |
 
-Name formatting replaces the card's comma separators with single spaces, drops
-empty positions, and trims. Capitalization, spelling, diacritics, and component
-order are preserved; the SDK does not identify which position holds a given
-name or a family name. A field that is absent, or that holds only separators
-and whitespace, yields `None`. Because a separator-only English field has no
-formatted value, `get_formatted_name()` falls back to Arabic in a case where
-`get_name()` would return the stored separators.
-
-`formatted_id_number()` returns any value that is not exactly fifteen ASCII
-digits unchanged. A read cannot produce one, but `id_number` is a public field
-a caller can replace.
-
-`Gender` is `Male`, `Female`, or `Unrecognized(String)`. `Gender::from_code()`
-matches `M` and `F` case-insensitively, and `Gender::code()` returns the
-canonical uppercase code printed on the card, or an unrecognized value exactly
-as stored. An unknown code never becomes `None`. The SDK supplies no `Male` or
-`ذكر` labels: those are translations rather than card data.
-
-Public data fields remain available for compatibility. For example,
-`card.extended().passport_number.as_deref()` accesses the optional passport
-number and `card.identity().place_of_birth_arabic.as_deref()` accesses the
-Arabic birthplace. See [data model](data-model.md) for the complete field list.
+Public data fields remain available for compatibility. For example
+`card.extended().passport_number.as_deref()` and
+`card.identity().place_of_birth_arabic.as_deref()` reach fields that have no
+accessor; the [field reference](field-reference.md) lists them all.
 
 ## Read options
 
@@ -102,29 +90,35 @@ Arabic birthplace. See [data model](data-model.md) for the complete field list.
 | `.with_modifiable_data(bool)` | Toggle extended data transfer |
 | `.with_holder_signature_image(bool)` | Toggle signature transfer |
 
-Builders take and return `ReadOptions`, so they can be chained. Identifiers
-and core identity are always read. The public Boolean fields remain usable
-in struct literals. None of these options requests protected private data.
+Builders take and return `ReadOptions`, so they chain. Identifiers and core
+identity are always read. The public Boolean fields remain usable in struct
+literals. The options select only the SDK's supported public groups. An individual card
+may still refuse access to one of those groups. See
+[readers, sessions, and reading options](readers-and-sessions.md).
 
 ## Status and errors
 
-`card.read_status` reports each group as `Read`, `NotRequested`,
-`NotAvailable`, or `Protected`. `Read` means the file was obtained and parsed;
-an individual field can still be blank. It is not proof of authenticity.
-Malformed data and transport errors return `Err` for the whole read.
+`card.read_status` reports each group as `Read`, `NotRequested`, `NotAvailable`,
+or `Protected`. `Read` means the file was obtained and parsed; an individual
+field can still be blank, and it is not proof of authenticity. Malformed data
+and transport errors return `Err` for the whole read.
 
 `Error` has public `kind`, `message`, and `status_word` fields and implements
 `std::error::Error`, `Display`, and Serde `Serialize`. PC/SC numeric diagnostics
-appear in the message; only ISO 7816 failures populate `status_word`.
-Use `kind`/`status_word` for decisions, not message-string matching.
-See [error handling](error-handling.md).
+appear in the message; only ISO 7816 failures populate `status_word`. Use `kind`
+and `status_word` for decisions, never message-string matching. See
+[errors and read statuses](error-handling.md).
 
 ## Serialization
 
 Data structs implement `Serialize` with camel-case field names. Generation,
-status, and error-kind enums serialize as snake-case strings. Accessor names
-do not change the serialized representation. If you add `serde_json` to your
-application, byte vectors serialize as arrays of integers, not Base64 or data
-URLs. The SDK does not include a JSON dependency, persistence API, or
-deserialization API. Derived `Debug` output contains personal fields; do not
-log the snapshot or its nested structs.
+status, and error-kind variants use snake-case names. With `serde_json`, a
+separately serialized `Gender::Male` becomes `"male"`, while
+`Gender::Unrecognized("X".into())` becomes `{"unrecognized":"X"}`.
+The snapshot still contains the original gender-code string: calling `gender()`
+does not replace it or add a serialized field. Accessor names do not change the
+serialized representation. If you add `serde_json`,
+byte vectors serialize as arrays of integers, not Base64 or data URLs. The SDK
+includes no JSON dependency, persistence API, or deserialization API. Derived
+`Debug` output contains personal fields; do not log the snapshot or its nested
+structs.

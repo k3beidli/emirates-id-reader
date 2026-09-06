@@ -1,8 +1,15 @@
 # Field reference
 
-Generated from the public Rustdoc comments in `src/data.rs`. Edit those comments and run `python scripts/build_wiki.py` to refresh this page.
+Look up the fields in a read result, the status of each group, and the options used to request it.
 
-`Option` fields can be absent. Consult the containing group's read status before using them. All accessors and fields refer to the same owned snapshot.
+- [Snapshot](#emiratesiddata)
+- [Core identity](#nonmodifiabledata)
+- [Extended information](#modifiabledata)
+- [Group statuses](#readstatus)
+- [Read options](#readoptions)
+- [Fields not read](#fields-not-read-by-this-sdk)
+
+`Option` fields can be absent. Check the containing group's read status before interpreting `None`. For examples and formatting rules, see [names](names.md), [codes and identifiers](codes-and-identifiers.md), [dates](dates.md), [photos and signatures](photos-and-signatures.md), or [extended information](extended-information.md).
 
 ## EmiratesIdData
 
@@ -88,3 +95,29 @@ Generated from the public Rustdoc comments in `src/data.rs`. Edit those comments
 | `non_modifiable` | `DataGroupStatus` | Required core identity file. |
 | `modifiable` | `DataGroupStatus` | Optional occupation/residency/passport/education file. |
 | `holder_signature_image` | `DataGroupStatus` | Optional V2 signature-image file. |
+
+## ReadOptions
+
+| Field | Rust type | Meaning |
+| --- | --- | --- |
+| `photo` | `bool` | Read the photograph elementary file. |
+| `modifiable_data` | `bool` | Read occupation, residency, passport, and education data. |
+| `holder_signature_image` | `bool` | Read the V2 holder-signature image file. |
+
+## Fields not read by this SDK
+
+Not read by this SDK; access restrictions apply.
+
+Address and contact fields excluded from this SDK's reads and data model. The imported implementation encountered access refusal (status 6982) for these files. This SDK provides no authentication or secure-messaging support.
+
+- home address details
+- work address details
+- resident phone number
+- mobile phone number
+- email address
+
+These fields have no getter, snapshot field, or per-group status. `DataGroupStatus::Protected` instead describes a supported optional group whose read was refused. See [errors and read statuses](error-handling.md) and [security and access boundaries](security.md).
+
+---
+
+This page is generated from Rustdoc comments in `src/data.rs`. To change it, edit those comments and run `python scripts/build_wiki.py`; see [documentation maintenance](wiki-setup.md).

@@ -16,7 +16,7 @@ fields remain available.
 | `card.non_modifiable.date_of_birth.as_deref()` | `card.get_date_of_birth()` |
 | `&card.modifiable` | `card.extended()` |
 
-Getters borrow the same result rather than transferring or cloning fields.
+The getters above borrow the same result rather than transferring or cloning fields.
 No renaming of your application's serialized camel-case fields is needed.
 
 ## Replacing your own formatting

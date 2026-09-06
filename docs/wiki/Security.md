@@ -1,40 +1,65 @@
-# Security and privacy
+<a id="security-and-privacy"></a>
 
-Emirates ID data is sensitive personal information. This SDK provides direct
-local card access; it does not decide whether an application is legally or
-operationally entitled to collect, display, transmit, or retain a field.
+# Security and access boundaries
 
-## SDK guarantees
+This SDK reads supported public files through the local PC/SC service. A
+successful read provides decoded data; it does not authenticate the card or
+verify the identity of the person presenting it.
 
-- Card reads use the local native PC/SC service.
-- The SDK makes no network requests and writes no cardholder data to disk.
-- Error messages do not contain decoded cardholder field values.
-- The CLI redacts reads by default; output includes field presence/lengths and
-  reader, ATR/generation, and group-status diagnostics.
-- Fingerprint templates and other biometric/private files are never requested.
-- Files requiring authentication or secure messaging are not bypassed.
+<a id="sdk-guarantees"></a>
 
-## Caller responsibilities
+## Local data handling
 
-- Request only the groups needed. Prefer `ReadOptions::identity_only()` for
-  matching and attendance systems.
-- Do not log `EmiratesIdData` or serialize it into crash reports. Its derived
-  `Debug` and `Serialize` implementations include personal data.
-- Clear UI state and release the result when the card is removed. Dropping
-  allocations does not guarantee memory zeroization or clear application copies.
-- Encrypt intentionally retained personal data and define a suitable retention
-  policy.
-- Treat `CardGeneration` as compatibility metadata, not proof of authenticity.
+- The library makes no network requests and writes no cardholder data to disk.
+- Error messages do not include decoded cardholder field values.
+- The diagnostic CLI redacts reads by default. Its explicit
+  `--show-personal-data` option displays basic identity values locally.
+- Snapshots remain in application memory until released. Dropping them does
+  not guarantee memory zeroization or removal of copies held by the application.
+
+## Fields not read by this SDK
+
+The SDK does not request these address and contact fields:
+
+- Home address details
+- Work address details
+- Resident phone number
+- Mobile phone number
+- Email address
+
+The imported implementation's access checks encountered protected files. This
+SDK has no authentication or secure-messaging support and leaves these fields
+outside its data model. Their absence does not mean the card has no such data.
+
+The exported `PROTECTED_AND_SKIPPED_FIELDS` constant lists these fields. They
+have no getter, snapshot field, or per-group status. See the generated
+[field reference](Field-Reference#fields-not-read-by-this-sdk).
+
+Fingerprint templates and family-book records are also not read. Some supported
+public groups, including photographs, can themselves be protected on an
+individual card. Those attempted reads receive a group status as described in
+[errors and read statuses](Error-Handling).
+
+<a id="caller-responsibilities"></a>
+
+## Application responsibilities
+
+- Request only the groups your operation needs.
+- Avoid logging snapshots or attaching them to crash reports. Their `Debug`
+  and `Serialize` implementations include personal data.
+- Clear displayed data and retained copies when they are no longer needed,
+  including after card removal in an interactive reader application.
+- Define access controls and retention rules for any data you choose to store
+  or transmit.
 
 ## Authenticity boundary
 
-Selecting the Emirates ID application and decoding its public files does not
-prove that a card is genuine. The official SDK describes separate genuineness
-and data-signature validation operations. This crate does not ship ICP secret
-material, a Secure Access Module integration, or a certificate trust policy,
-and therefore makes no authenticity claim.
+An ATR match identifies a documented chip family for compatibility purposes.
+It does not prove a card is genuine. The
+[EIDA C++ developer guide](Sources#c-developer-guide), section 5.7, explicitly
+distinguishes ATR checks from the toolkit's separate genuineness operation.
 
-Regulated identity-verification systems should use an authorised ICP
-integration and establish the required consent, certificate, and audit
-processes. This limitation does not affect local public-data extraction for an
-authorised application.
+This SDK does not implement that operation, verify digital signatures, or
+establish a certificate trust policy. Applications needing verified identity
+must address those requirements through an appropriate verification integration.
+Reading a photograph or holder-signature image is not signature verification.

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Corrected documentation on missing values, allocation, gender serialization,
+  source-document dates, and hardware-validation scope. Preserved previous
+  section anchors while improving the topic guides.
+- Anchored package inclusion patterns to exclude nested application files and
+  kept local companion-app guides out of the SDK archive.
+
 - Added opt-in formatting accessors: `get_formatted_name()`,
   `get_formatted_name_in()`, `name_components_in()`, and
   `formatted_id_number()`. Name formatting replaces the card's comma separators
@@ -13,8 +19,17 @@
   application.
 - All of the above are additive. Existing accessors, public fields, and Serde
   output are unchanged, so decoded card values are never overwritten.
-- Documented the rule that decides what the SDK formats: format toward what the
-  card prints, and leave anything beyond that to the application.
+- Documented the formatting policy: the SDK preserves decoded card values and
+  provides explicit helpers for documented name separators, identifier
+  formatting, and known code interpretation; applications control localization
+  and presentation.
+- Restructured the documentation around topic guides for names, codes and
+  identifiers, dates, photos and signatures, extended information, and reader
+  sessions, with a grouped Wiki sidebar. Page names, and therefore published
+  Wiki URLs, are unchanged.
+- The generated field reference now covers `ReadOptions` and lists the fields
+  this SDK never requests, derived from `PROTECTED_AND_SKIPPED_FIELDS`.
+- Every guide carrying a Rust example is compiled as a doctest.
 - Added the card-reader animation as a GIF in the README.
 
 ## 0.4.0 - 2026-09-05

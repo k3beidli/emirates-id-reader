@@ -1,4 +1,6 @@
-# Hardware validation
+<a id="hardware-validation"></a>
+
+# Testing and hardware validation
 
 No personal values should be copied into issues, fixtures, screenshots, or
 test logs. Use the CLI's redacted mode, which reports only generation, field
@@ -27,17 +29,19 @@ Run the following on at least one card from each chip generation:
 
 ## Refactor validation
 
-Version 0.3 has synthetic protocol and SDK tests. The historical results below
+The current SDK has synthetic protocol and API tests. The historical results below
 were supplied with the imported 0.2 project; they are not new hardware results
 for the refactored implementation. Repeat this checklist on V1 and V2 before
 marking the new release hardware validated.
 
-## Evidence table
+<a id="evidence-table"></a>
+
+## Historical evidence (imported 0.2 implementation)
 
 | Generation | Reader | Core identity | Extended data | Photo | Signature image | Removal/reinsert | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| V1 | HID OMNIKEY 3x21 | Pass | Pass on tested card | Pass on tested card | Pass on tested card | Pending | Read path hardware validated |
-| V2 | HID OMNIKEY 3x21 | Pass | Pass | Pass | Pass | Pass | Hardware validated |
+| V1 | HID OMNIKEY 3x21 | Pass | Pass on tested card | Pass on tested card | Pass on tested card | Pending | Reported pass; V1 lifecycle pending |
+| V2 | HID OMNIKEY 3x21 | Pass | Pass | Pass | Pass | Pass | Reported pass |
 
 The table records compatibility, not card authenticity. Offline genuineness or
 digital-signature verification requires a separate trust policy and current
